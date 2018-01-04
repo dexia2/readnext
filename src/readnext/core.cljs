@@ -7,6 +7,7 @@
 (enable-console-print!)
 
 ;TODO
+;予測を追加
 ;testを書く
 ;得点を計算する
 ;ある時点での得点も計算する
@@ -116,7 +117,7 @@
   (reset! play-context
           { :rallies (list) }))
 
-(defn continue-stroke!
+(defn record-stroke!
   [context player direction]
   (let [{rallies :rallies} context]
     (->>
@@ -141,28 +142,26 @@
 
 (defn next-serve
   [rallies]
-  (->>
-    (next-server rallies)
-    (next-serve-pos rallies)
-    (serve-rally server)))
+  (let [server (next-server rallies)
+         pos (next-serve-pos rallies server)]
+    (serve-rally server pos)))
 
 (defn decide-stroke!
   ([player direction] (decide-stroke! player direction nil))
   ([player direction serve?]
-   (let [context @play-context
-         rallies (context :rallies)]
      (cond
-       (game-end? rallies) nil
+       (game-end? (@play-context :rallies)) nil
        serve? (when (= player :npc)
-                (continue-stroke! context player (next-direction)))
-       (not (success? context direction)) (do
-                                            (fail-stroke! context player)
-                                            (when (not (game-end? rallies))
-                                              (start-new-rally! (next-serve rallies))
-                                              (decide-stroke! (rival player) nil true)))
+                (record-stroke! @play-context player direction))
+       (not (success? @play-context direction)) (do
+                                            (record-stroke! @play-context player direction)
+                                            (fail-stroke! @play-context player)
+                                            (when (not (game-end? (@play-context :rallies)))
+                                              (start-new-rally! (next-serve (@play-context :rallies)))
+                                              (decide-stroke! (rival player) (next-direction) true)))
        :else (do
-               (continue-stroke! context player direction)
-               (when (= player :pc) (decide-stroke! :npc (next-direction))))))))
+               (record-stroke! @play-context player direction)
+               (when (= player :pc) (decide-stroke! :npc (next-direction)))))))
 
 (defn dom-ready
   [handler]
