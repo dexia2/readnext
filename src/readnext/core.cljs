@@ -50,6 +50,13 @@
       :front-right
       :front-left)))
 
+(defn next-stroker
+  [rallies]
+  (rival ((first
+            ((last-undecided-rally rallies)
+              :strokes))
+           :starter)))
+
 (defn game-end?
   [rallies]
   (let [{npc :npc pc :pc} (group-by :won-by rallies )
@@ -66,6 +73,7 @@
                    :starter player
                    :start-pos start-pos
                    :end-pos start-pos
+                   :predict nil
                    })
    :won-by :doubt
    })
@@ -87,13 +95,14 @@
   (first (:strokes rally)))
 
 (defn next-stroke
-  [rallies player direction]
+  [rallies player direction prediction]
   (let [last-pos (-> (last-undecided-rally rallies)
                      (last-stroke)
                      (get :end-pos))]
     {:starter player
      :start-pos last-pos
      :end-pos direction
+     :predict prediction
      }))
 
 (defn update-stroke
@@ -108,8 +117,13 @@
   (nth (seq directions)
        (rand-int (count directions))))
 
+(defn next-prediction
+  []
+  (nth (seq directions)
+       (rand-int (count directions))))
+
 (defn success?
-  [context direction]
+  [context direction prediction]
   (<= 50 (rand-int 100)))
 
 (defn init-context!
@@ -118,10 +132,10 @@
           { :rallies (list) }))
 
 (defn record-stroke!
-  [context player direction]
+  [context player direction prediction]
   (let [{rallies :rallies} context]
     (->>
-      (next-stroke rallies player direction)
+      (next-stroke rallies player direction prediction)
       (update-stroke rallies)
       ((fn [r] (assoc-in context [:rallies] r)))
       (reset! play-context))))
@@ -147,21 +161,38 @@
     (serve-rally server pos)))
 
 (defn decide-stroke!
-  ([player direction] (decide-stroke! player direction nil))
-  ([player direction serve?]
+  ([player direction] (decide-stroke! player direction nil nil))
+  ([player direction serve?] (decide-stroke! player direction serve? nil))
+  ([player direction serve? prediction]
      (cond
        (game-end? (@play-context :rallies)) nil
        serve? (when (= player :npc)
-                (record-stroke! @play-context player direction))
-       (not (success? @play-context direction)) (do
-                                            (record-stroke! @play-context player direction)
-                                            (fail-stroke! @play-context player)
-                                            (when (not (game-end? (@play-context :rallies)))
-                                              (start-new-rally! (next-serve (@play-context :rallies)))
-                                              (decide-stroke! (rival player) (next-direction) true)))
-       :else (do
-               (record-stroke! @play-context player direction)
-               (when (= player :pc) (decide-stroke! :npc (next-direction)))))))
+                (record-stroke! @play-context player direction nil))
+       (not (success?
+              @play-context
+              direction
+              prediction)) (do
+                             (record-stroke! @play-context player direction prediction)
+                             (fail-stroke! @play-context player)
+                             (when (not (game-end? (@play-context :rallies)))
+                               (start-new-rally! (next-serve (@play-context :rallies)))
+                               (decide-stroke! (rival player) (next-direction) true)))
+       :else (record-stroke! @play-context player direction prediction))))
+
+(defn predict!
+  [player direction]
+  (when-not (game-end? (@play-context :rallies))
+    (if (= player :pc)
+      (decide-stroke! :npc (next-direction) nil direction))))
+
+(defn play!
+  []
+  (if (= (next-stroker (@play-context :rallies))
+               :pc)
+          (decide-stroke! :pc (next-direction) nil (next-prediction))
+          (do
+            (predict! :pc (next-prediction))
+            (decide-stroke! :npc (next-direction) nil (next-prediction)))))
 
 (defn dom-ready
   [handler]
@@ -180,5 +211,5 @@
     (decide-stroke! :npc nil true)
     (submit
       (fn []
-        (decide-stroke! :pc (next-direction))
+        (play!)
         (println @play-context)))))
