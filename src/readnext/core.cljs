@@ -1,5 +1,7 @@
 (ns readnext.core
-  (:require [clojure.browser.repl :as repl]))
+  (:require [clojure.browser.repl :as repl]
+            [quil.core :as q :include-macros true]
+            ))
 
 ;; (defonce conn
 ;;   (repl/connect "http://localhost:9000/repl"))
@@ -213,3 +215,19 @@
       (fn []
         (play!)
         (println @play-context)))))
+
+(defn draw []
+  (q/stroke 0)
+  (q/rect 0 0 290 290)                                      ;コート全体
+  (q/line 20 0 20 290)                                      ;サイドライン（左)
+  (q/line 145 0 145 290)                                    ;センターライン（縦）
+  (q/line 270 0 270 290)                                    ;サイドライン（右）
+  (q/line 0 50 290 50)                                      ;サービスライン（ダブルス）
+  (q/line 0 145 290 145)                                    ;ネット
+  (q/line 0 240 290 240)                                    ;サービスライン（ダブルス）
+  )
+
+(q/defsketch court
+             :draw draw
+             :host "court"
+             :size [300 300])
