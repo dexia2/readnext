@@ -147,9 +147,9 @@
   (reset! play-context
           (update-in context [:rallies]
                      (fn [[first & rest :as rallies] r]
-                         (replace-last
-                           rallies
-                           (assoc-in first [:won-by] (rival player)))))))
+                       (replace-last
+                         rallies
+                         (assoc-in first [:won-by] (rival player)))))))
 
 (defn start-new-rally!
   [serve]
@@ -159,27 +159,27 @@
 (defn next-serve
   [rallies]
   (let [server (next-server rallies)
-         pos (next-serve-pos rallies server)]
+        pos (next-serve-pos rallies server)]
     (serve-rally server pos)))
 
 (defn decide-stroke!
   ([player direction] (decide-stroke! player direction nil nil))
   ([player direction serve?] (decide-stroke! player direction serve? nil))
   ([player direction serve? prediction]
-     (cond
-       (game-end? (@play-context :rallies)) nil
-       serve? (when (= player :npc)
-                (record-stroke! @play-context player direction nil))
-       (not (success?
-              @play-context
-              direction
-              prediction)) (do
-                             (record-stroke! @play-context player direction prediction)
-                             (fail-stroke! @play-context player)
-                             (when (not (game-end? (@play-context :rallies)))
-                               (start-new-rally! (next-serve (@play-context :rallies)))
-                               (decide-stroke! (rival player) (next-direction) true)))
-       :else (record-stroke! @play-context player direction prediction))))
+   (cond
+     (game-end? (@play-context :rallies)) nil
+     serve? (when (= player :npc)
+              (record-stroke! @play-context player direction nil))
+     (not (success?
+            @play-context
+            direction
+            prediction)) (do
+                           (record-stroke! @play-context player direction prediction)
+                           (fail-stroke! @play-context player)
+                           (when (not (game-end? (@play-context :rallies)))
+                             (start-new-rally! (next-serve (@play-context :rallies)))
+                             (decide-stroke! (rival player) (next-direction) true)))
+     :else (record-stroke! @play-context player direction prediction))))
 
 (defn predict!
   [player direction]
@@ -190,11 +190,11 @@
 (defn play!
   []
   (if (= (next-stroker (@play-context :rallies))
-               :pc)
-          (decide-stroke! :pc (next-direction) nil (next-prediction))
-          (do
-            (predict! :pc (next-prediction))
-            (decide-stroke! :npc (next-direction) nil (next-prediction)))))
+         :pc)
+    (decide-stroke! :pc (next-direction) nil (next-prediction))
+    (do
+      (predict! :pc (next-prediction))
+      (decide-stroke! :npc (next-direction) nil (next-prediction)))))
 
 (defn dom-ready
   [handler]
@@ -218,6 +218,7 @@
 
 (defn draw []
   (q/stroke 0)
+  (q/fill 255)
   (q/rect 0 0 290 290)                                      ;コート全体
   (q/line 20 0 20 290)                                      ;サイドライン（左)
   (q/line 145 0 145 290)                                    ;センターライン（縦）
@@ -225,6 +226,20 @@
   (q/line 0 50 290 50)                                      ;サービスライン（ダブルス）
   (q/line 0 145 290 145)                                    ;ネット
   (q/line 0 240 290 240)                                    ;サービスライン（ダブルス）
+  (q/ellipse 40 30 30 30)                                   ;相手コート奥（左）ターゲット
+  (q/ellipse 240 30 30 30)                                  ;相手コート奥（右）ターゲット
+  (q/ellipse 40 70 30 30)                                   ;相手コート横（左）ターゲット
+  (q/ellipse 240 70 30 30)                                  ;相手コート横（右）ターゲット
+  (q/ellipse 40 110 30 30)                                   ;相手コート前（左）ターゲット
+  (q/ellipse 240 110 30 30)                                  ;相手コート前（右）ターゲット
+  (q/stroke 240 179 37)
+  (q/fill 240 179 37)
+  (q/ellipse 40 180 30 30)                                   ;自分コート前（左）ターゲット
+  (q/ellipse 240 180 30 30)                                  ;自分コート前（右）ターゲット
+  (q/ellipse 40 220 30 30)                                   ;自分コート横（左）ターゲット
+  (q/ellipse 240 220 30 30)                                  ;自分コート横（右）ターゲット
+  (q/ellipse 40 260 30 30)                                   ;自分コート奥（左）ターゲット
+  (q/ellipse 240 260 30 30)                                  ;自分コート奥（右）ターゲット
   )
 
 (q/defsketch court
