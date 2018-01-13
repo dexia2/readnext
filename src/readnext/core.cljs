@@ -188,7 +188,8 @@
                            (fail-stroke! @play-context player)
                            (when (not (game-end? (@play-context :rallies)))
                              (start-new-rally! (next-serve (@play-context :rallies)))
-                             (decide-stroke! (rival player) (next-direction @play-context) true)))
+                             (when (= :npc (rival player))
+                               (decide-stroke! (rival player) (next-direction @play-context) true))))
      :else (record-stroke! @play-context player direction prediction))))
 
 (defn predict!
@@ -263,12 +264,8 @@
   (q/line 0 240 290 240)                                    ;サービスライン（ダブルス）
   )
 
-(defn draw-npc-targets []
-  (doseq [{x :x y :y} (seq npc-targets)]
-    (q/ellipse x y  (* target-radius 2) (* target-radius 2))))
-
-(defn draw-pc-targets [coll]
-  (doseq [{x :x y :y} coll]
+(defn draw-targets [targets]
+  (doseq [{x :x y :y} (seq targets) ]
     (q/ellipse x y  (* target-radius 2) (* target-radius 2))))
 
 ;たぶんマウスターゲットをもらって、それと比較するのが正しい
@@ -276,26 +273,28 @@
 ;あるいは色とそれ以外に分割する
 ;そうすれば、最後だけ色を変えて描画すればよい。
 ;上の関数は抽象化すべし
-(defn in-target [mouse-x mouse-y]
+(defn in-target [mouse-x mouse-y targets]
   (filter (fn [{x :x y :y} target] (and (<= (- x target-radius)
                                             mouse-x
                                             (+ x target-radius))
                                         (<= (- y target-radius)
                                             mouse-y
                                             (+ y target-radius))))
-  (seq pc-targets)))
+  (seq targets)))
 
 (defn draw []
   (q/stroke 0)
   (q/fill 255)
   (draw-court)
   (q/stroke 240 179 37)
-  (draw-npc-targets)
 
-  (draw-pc-targets (seq pc-targets))
-  (let [in (in-target (q/mouse-x) (q/mouse-y))]
-      (q/fill 240 179 37)
-      (draw-pc-targets in))
+  (let [targets (if (= :pc (next-stroker (@play-context :rallies)))
+                  pc-targets npc-targets)
+        in (in-target (q/mouse-x) (q/mouse-y) targets)]
+    (draw-targets targets)
+    (q/fill 240 179 37)
+    (draw-targets in))
+
   )
 
 (q/defsketch court
