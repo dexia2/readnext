@@ -230,11 +230,23 @@
 (defn setup []
   (q/frame-rate 5))
 
+;Todo
+;シャトルの移動を書く
+;自分が打つ場合は選択したところに移動でOK
+;相手が打つ場合は自動選択なので、選択したところとは関係がない
+;移動は時系列的なところなので、シャトルの座標を持っておくのが正しい
+;選択したコース等々はcontextに持っておくが、テストならどっちでもいい
+;移動は直線なので、+ x/スピード + y/スピードかな（逆方向はマイナス）
+;スピードも変数に入れておくのがいいんじゃないのか
+
 (def target-radius 15)
+(def shuttle-radius 15)
 (def sideline-width 20)
 (def court-width 300)
 (def court-height 300)
 (def target-padding 15)
+(def shuttle-speed 15)
+(def shuttle-pos (atom {:x nil :y nil}))
 (def npc-targets #{
                   {:direction :front-left :x 40 :y 110 }
                   {:direction :front-right :x 240 :y 110 }
@@ -268,11 +280,6 @@
   (doseq [{x :x y :y} (seq targets) ]
     (q/ellipse x y  (* target-radius 2) (* target-radius 2))))
 
-;たぶんマウスターゲットをもらって、それと比較するのが正しい
-;そして、たぶん色を変えるものを後ろにもっていくようにソートすればいい
-;あるいは色とそれ以外に分割する
-;そうすれば、最後だけ色を変えて描画すればよい。
-;上の関数は抽象化すべし
 (defn in-target [mouse-x mouse-y targets]
   (filter (fn [{x :x y :y} target] (and (<= (- x target-radius)
                                             mouse-x
@@ -281,6 +288,11 @@
                                             mouse-y
                                             (+ y target-radius))))
   (seq targets)))
+
+(defn target-of [direction targets]
+  (first
+    (filter (fn [target] (= (target :direction) direction))
+            (seq targets))))
 
 (defn draw []
   (q/stroke 0)
@@ -294,6 +306,24 @@
     (draw-targets targets)
     (q/fill 240 179 37)
     (draw-targets in))
+
+  (q/fill 255)
+  (let [rally (last-undecided-rally @play-context)
+        stroke (last-stroke rally)
+        {from :start-pos to :end-pos} rally
+        stroker (next-stroker (@play-context :rallies))
+        from-pos (target-of from
+                            (if (= stroker :pc) pc-targets npc-targets))
+        to-pos (target-of to
+                          (if (= stroker :pc) pc-targets npc-targets))
+        {x :x y :y} @shuttle-pos]
+    (when x
+      (q/ellipse x y shuttle-radius shuttle-radius))
+    (reset! shuttle-pos
+            (-> (update-in [:x] + (/ (- (from-pos :x) (to-pos :x))
+                                     shuttle-speed)))
+            (update-in [:y] + (/ (- (from-pos :y) (to-pos :y))
+                                 shuttle-speed))))
 
   )
 
