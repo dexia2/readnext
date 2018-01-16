@@ -307,24 +307,28 @@
     (q/fill 240 179 37)
     (draw-targets in))
 
-  (q/fill 255)
-  (let [rally (last-undecided-rally @play-context)
+  (q/fill 240 179 37)
+  (let [rally (last-undecided-rally (@play-context :rallies))
         stroke (last-stroke rally)
-        {from :start-pos to :end-pos} rally
+        {from :start-pos to :end-pos} stroke
         stroker (next-stroker (@play-context :rallies))
         from-pos (target-of from
                             (if (= stroker :pc) pc-targets npc-targets))
-        to-pos (target-of to
-                          (if (= stroker :pc) pc-targets npc-targets))
+        to-pos :front-left
         {x :x y :y} @shuttle-pos]
     (when x
       (q/ellipse x y shuttle-radius shuttle-radius))
     (reset! shuttle-pos
-            (-> (update-in [:x] + (/ (- (from-pos :x) (to-pos :x))
-                                     shuttle-speed)))
-            (update-in [:y] + (/ (- (from-pos :y) (to-pos :y))
-                                 shuttle-speed))))
-
+            {
+             :x (+ x
+                  (/ (- (from-pos :x) (to-pos :x))
+                                     shuttle-speed))
+             :y (+ y
+                  (/ (- (from-pos :y) (to-pos :y))
+                                     shuttle-speed))
+             }
+            )
+  )
   )
 
 (q/defsketch court
