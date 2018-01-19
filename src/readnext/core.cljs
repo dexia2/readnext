@@ -314,21 +314,27 @@
         stroker (next-stroker (@play-context :rallies))
         from-pos (target-of from
                             (if (= stroker :pc) pc-targets npc-targets))
-        to-pos :front-left
+        to-pos {:direction :middle-left :x 40 :y 70 }
         {x :x y :y} @shuttle-pos]
-    (when x
-      (q/ellipse x y shuttle-radius shuttle-radius))
-    (reset! shuttle-pos
-            {
-             :x (+ x
-                  (/ (- (from-pos :x) (to-pos :x))
-                                     shuttle-speed))
-             :y (+ y
-                  (/ (- (from-pos :y) (to-pos :y))
-                                     shuttle-speed))
-             }
-            )
-  )
+
+    (if (and x y)
+      (q/ellipse x y shuttle-radius shuttle-radius)
+      (reset! shuttle-pos {:x (from-pos :x)
+                           :y (from-pos :y)}))
+
+    ;計算が相手によって変わるのでは
+    (when (and to-pos
+               (>= x (to-pos :x))
+               (>= y (to-pos :y)))
+      (reset! shuttle-pos
+              {
+               :x (+ x
+                     (/ (- (to-pos :x) (from-pos :x))
+                        shuttle-speed))
+               :y (+ y
+                     (/ (- (to-pos :y) (from-pos :y))
+                        shuttle-speed))
+               })))
   )
 
 (q/defsketch court
