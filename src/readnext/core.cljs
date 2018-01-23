@@ -1,22 +1,25 @@
 (ns readnext.core
   (:require [clojure.browser.repl :as repl]
             [quil.core :as q :include-macros true]
+            [readnext.motion :as m]
             ))
 
-;; (defonce conn
+;; (defonce conncore
 ;;   (repl/connect "http://localhost:9000/repl"))
 
 (enable-console-print!)
 
-;TODO
-;予測を追加
-;testを書く
-;得点を計算する
-;ある時点での得点も計算する
-;次のストロークを計算
-;AI周りを頑張る
-;描画まわり
-;リセット
+(m/test)
+
+;;TODO
+;;予測を追加
+;;testを書く
+;;得点を計算する
+;;ある時点での得点も計算する
+;;次のストロークを計算
+;;AI周りを頑張る
+;;描画まわり
+;;リセット
 
 (defn replace-last
   [lst elm]
