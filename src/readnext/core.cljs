@@ -9,8 +9,6 @@
 
 (enable-console-print!)
 
-(m/test)
-
 ;;TODO
 ;;予測を追加
 ;;testを書く
@@ -249,7 +247,7 @@
 (def court-height 300)
 (def target-padding 15)
 (def shuttle-speed 15)
-(def shuttle-pos (atom {:x nil :y nil}))
+(def shuttle-pos (atom nil))
 (def npc-targets #{
                   {:direction :front-left :x 40 :y 110 }
                   {:direction :front-right :x 240 :y 110 }
@@ -317,27 +315,19 @@
         stroker (next-stroker (@play-context :rallies))
         from-pos (target-of from
                             (if (= stroker :pc) pc-targets npc-targets))
-        to-pos {:direction :middle-left :x 40 :y 70 }
-        {x :x y :y} @shuttle-pos]
+        to-pos {:direction :middle-left :x 40 :y 70 }]
 
-    (if (and x y)
-      (q/ellipse x y shuttle-radius shuttle-radius)
+    (println @shuttle-pos)
+    (if @shuttle-pos
+      (q/ellipse (@shuttle-pos :x)
+                 (@shuttle-pos :y)
+                 shuttle-radius
+                 shuttle-radius)
       (reset! shuttle-pos {:x (from-pos :x)
                            :y (from-pos :y)}))
 
-    ;計算が相手によって変わるのでは
-    (when (and to-pos
-               (>= x (to-pos :x))
-               (>= y (to-pos :y)))
-      (reset! shuttle-pos
-              {
-               :x (+ x
-                     (/ (- (to-pos :x) (from-pos :x))
-                        shuttle-speed))
-               :y (+ y
-                     (/ (- (to-pos :y) (from-pos :y))
-                        shuttle-speed))
-               })))
+    (reset! shuttle-pos (m/move to-pos @shuttle-pos target-radius shuttle-speed))
+    )
   )
 
 (q/defsketch court
