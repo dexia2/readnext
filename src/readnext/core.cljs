@@ -6,18 +6,7 @@
 
 ;; (defonce conncore
 ;;   (repl/connect "http://localhost:9000/repl"))
-
 (enable-console-print!)
-
-;;TODO
-;;予測を追加
-;;testを書く
-;;得点を計算する
-;;ある時点での得点も計算する
-;;次のストロークを計算
-;;AI周りを頑張る
-;;描画まわり
-;;リセット
 
 (defn replace-last
   [lst elm]
@@ -210,35 +199,16 @@
 
 (defn dom-ready
   [handler]
-  (.addEventListener js/window "DOMContentLoaded" handler))
+  )
 
-(defn submit
-  [handler]
-  (->
-    (.getElementById js/document "submit")
-    (.addEventListener "click" handler)))
-
-(dom-ready
-  (fn []
-    (init-context! (random-mode))
-    (start-new-rally! (next-serve (@play-context :rallies)))
-    (decide-stroke! :npc nil true)
-    (submit
-      (fn []
-        (play!)
-        (println @play-context)))))
+(.addEventListener js/window "DOMContentLoaded"
+                   (fn []
+                     (init-context! (random-mode))
+                     (start-new-rally! (next-serve (@play-context :rallies)))
+                     (decide-stroke! :npc nil true)))
 
 (defn setup []
   (q/frame-rate 5))
-
-;Todo
-;シャトルの移動を書く
-;自分が打つ場合は選択したところに移動でOK
-;相手が打つ場合は自動選択なので、選択したところとは関係がない
-;移動は時系列的なところなので、シャトルの座標を持っておくのが正しい
-;選択したコース等々はcontextに持っておくが、テストならどっちでもいい
-;移動は直線なので、+ x/スピード + y/スピードかな（逆方向はマイナス）
-;スピードも変数に入れておくのがいいんじゃないのか
 
 (def target-radius 15)
 (def shuttle-radius 15)
@@ -249,15 +219,15 @@
 (def shuttle-speed 15)
 (def shuttle-pos (atom nil))
 (def npc-targets #{
-                  {:direction :front-left :x 40 :y 110 }
-                  {:direction :front-right :x 240 :y 110 }
-                  {:direction :middle-left :x 40 :y 70 }
-                  {:direction :middle-right :x 240 :y 70 }
-                  {:direction :back-left :x 40 :y 30 }
-                  {:direction :back-right :x 240 :y 30 }
-                  })
+                   {:direction :front-left :x 40 :y 110 }
+                   {:direction :front-right :x 240 :y 110 }
+                   {:direction :middle-left :x 40 :y 70 }
+                   {:direction :middle-right :x 240 :y 70 }
+                   {:direction :back-left :x 40 :y 30 }
+                   {:direction :back-right :x 240 :y 30 }
+                   })
 
-;計算で出したいが、関係性を記述するのがしんどい
+;;計算で出したいが、関係性を記述するのがしんどい
 (def pc-targets #{
                   {:direction :front-left :x 40 :y 180 }
                   {:direction :front-right :x 240 :y 180 }
@@ -278,17 +248,14 @@
   )
 
 (defn draw-targets [targets]
-  (doseq [{x :x y :y} (seq targets) ]
+  (doseq [{x :x y :y} (seq targets)]
     (q/ellipse x y  (* target-radius 2) (* target-radius 2))))
 
 (defn in-target [mouse-x mouse-y targets]
-  (filter (fn [{x :x y :y} target] (and (<= (- x target-radius)
-                                            mouse-x
-                                            (+ x target-radius))
-                                        (<= (- y target-radius)
-                                            mouse-y
-                                            (+ y target-radius))))
-  (seq targets)))
+  (filter (fn [target] (m/in-ellipse target
+                                     {:x mouse-x :y mouse-y}
+                                     shuttle-radius))
+          targets))
 
 (defn target-of [direction targets]
   (first
@@ -303,10 +270,12 @@
 
   (let [targets (if (= :pc (next-stroker (@play-context :rallies)))
                   pc-targets npc-targets)
-        in (in-target (q/mouse-x) (q/mouse-y) targets)]
+        target  (in-target (q/mouse-x) (q/mouse-y) targets)]
     (draw-targets targets)
-    (q/fill 240 179 37)
-    (draw-targets in))
+    (when-not (empty? target)
+      (q/fill 240 179 37)
+      (draw-targets target)
+      (play!)))
 
   (q/fill 240 179 37)
   (let [rally (last-undecided-rally (@play-context :rallies))
@@ -315,9 +284,9 @@
         stroker (next-stroker (@play-context :rallies))
         from-pos (target-of from
                             (if (= stroker :pc) pc-targets npc-targets))
-        to-pos {:direction :middle-left :x 40 :y 70 }]
+        to-pos (target-of to
+                          (if (= stroker :pc) npc-targets pc-targets))]
 
-    (println @shuttle-pos)
     (if @shuttle-pos
       (q/ellipse (@shuttle-pos :x)
                  (@shuttle-pos :y)
