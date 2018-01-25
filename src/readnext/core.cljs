@@ -12,98 +12,9 @@
 
 (def first-server :pc)
 (def play-context (atom {}))
-(def directions #{:front-left :front-right :middle-left :middle-right :back-left :back-right })
 (def modes #{:offensive :defensive :net :all-round})
 (def normal-score-limit 21)
 (def max-score-limit 30)
-
-(defn rival
-  [player]
-  (case player
-    :npc :pc
-    :pc :npc
-    :doubt :doubt))
-(defn next-server
-  [rallies]
-  (or (get (last-decided-rally rallies) :won-by)
-      first-server))
-
-(defn next-serve-pos
-  [rallies server]
-  (let [points (count
-                 (filter (fn [rally] (= (rally :won-by) server))
-                         rallies))]
-    (if (even? points)
-      :front-right
-      :front-left)))
-
-(defn next-stroker
-  [rallies]
-  (rival ((first
-            ((last-undecided-rally rallies)
-              :strokes))
-           :starter)))
-
-(defn game-end?
-  [rallies]
-  (let [{npc :npc pc :pc} (group-by :won-by rallies )
-        scores (list (count pc) (count npc))]
-    (or (some (fn [s] (>= s max-score-limit)) scores)
-        (and (some (fn [s] (= s normal-score-limit)) scores)
-             (>= (js/Math.abs (- (first scores) (second scores)))
-                 2)))))
-
-(defn serve-rally
-  [player start-pos]
-  {
-   :strokes (list {
-                   :starter player
-                   :start-pos start-pos
-                   :end-pos start-pos
-                   :predict nil
-                   })
-   :won-by :doubt
-   })
-
-(defn last-undecided-rally
-  [rallies]
-  (first
-    (filter (fn [rally] (= (rally :won-by) :doubt) )
-            rallies)))
-
-(defn last-decided-rally
-  [rallies]
-  (first
-    (filter (fn [rally] (not= (rally :won-by) :doubt) )
-            rallies)))
-
-(defn last-stroke
-  [rally]
-  (first (:strokes rally)))
-
-(defn next-serve
-  [rallies]
-  (let [server (next-server rallies)
-        pos (next-serve-pos rallies server)]
-    (serve-rally server pos)))
-
-(defn next-stroke
-  [rallies player direction prediction]
-  (let [last-pos (-> (last-undecided-rally rallies)
-                     (last-stroke)
-                     (get :end-pos))]
-    {:starter player
-     :start-pos last-pos
-     :end-pos direction
-     :predict prediction
-     }))
-
-(defn update-stroke
-  [rallies next]
-  (let [new-last-rally (update-in
-                        (last-undecided-rally rallies)
-                        [:strokes] conj next)]
-    (u/replace-last rallies new-last-rally)))
 
 (defn random-mode
   []
@@ -111,12 +22,12 @@
 
 (defn next-direction
   [context]
-  (u/random-elm (seq directions)))
+  (u/random-elm (seq d/directions)))
 
 (defn next-prediction
   []
-  (nth (seq directions)
-       (rand-int (count directions))))
+  (nth (seq d/directions)
+       (rand-int (count d/directions))))
 
 (defn success?
   [context direction prediction]
@@ -125,76 +36,67 @@
 (defn init-context!
   [mode]
   (reset! play-context
-          { :rallies (list)
-           :npc-mode mode
-           }))
+          (d/init-context
+           {:first-server first-server
+            :score-limit normal-score-limit
+            :deuce-limit max-score-limit
+            })))
 
 (defn record-stroke!
-  [context player direction prediction]
-  (let [{rallies :rallies} context]
-    (->>
-      (next-stroke rallies player direction prediction)
-      (update-stroke rallies)
-      ((fn [r] (assoc-in context [:rallies] r)))
-      (reset! play-context))))
+  [player direction prediction]
+  (reset! play-context
+          (d/record-stroke-to-context @play-context player direction)))
 
 (defn fail-stroke!
-  [context player]
+  [player]
   (reset! play-context
-          (update-in context [:rallies]
-                     (fn [[first & rest :as rallies] r]
-                       (u/replace-last
-                        rallies
-                        (assoc-in first [:won-by] (rival player)))))))
+          (d/fail-stroke @play-context player)))
 
-(defn start-new-rally!
-  [serve]
-  (swap! play-context
-         update-in [:rallies] conj serve))
+(defn record-service!
+  []
+  (let [serve (d/next-serve @play-context)]
+    (reset! play-context
+            (d/record-service @play-context serve))))
 
 (defn decide-stroke!
   ([player direction] (decide-stroke! player direction nil nil))
   ([player direction serve?] (decide-stroke! player direction serve? nil))
   ([player direction serve? prediction]
    (cond
-     (game-end? (@play-context :rallies)) nil
+     (d/game-end? @play-context) nil
      serve? (when (= player :npc)
-              (record-stroke! @play-context player direction nil))
+              (record-stroke! player direction nil))
      (not (success?
-            @play-context
-            direction
-            prediction)) (do
-                           (record-stroke! @play-context player direction prediction)
-                           (fail-stroke! @play-context player)
-                           (when (not (game-end? (@play-context :rallies)))
-                             (start-new-rally! (next-serve (@play-context :rallies)))
-                             (when (= :npc (rival player))
-                               (decide-stroke! (rival player) (next-direction @play-context) true))))
-     :else (record-stroke! @play-context player direction prediction))))
+           @play-context
+           direction
+           prediction)) (do
+                          (record-stroke! player direction prediction)
+                          (fail-stroke! player)
+                          (when (not (d/game-end? @play-context))
+                            (record-service!)
+                            (when (= :npc (d/rival player))
+                              (decide-stroke! (d/rival player) (next-direction @play-context) true))))
+     :else (record-stroke! player direction prediction))))
 
 (defn predict!
   [player direction]
-  (when-not (game-end? (@play-context :rallies))
+  (when-not (d/game-end? @play-context)
     (if (= player :pc)
       (decide-stroke! :npc (next-direction @play-context) nil direction))))
 
 (defn play!
   []
-  (if (= (next-stroker (@play-context :rallies))
+  (if (= (d/next-stroker (@play-context :rallies))
          :pc)
     (decide-stroke! :pc (next-direction @play-context) nil (next-prediction))
     (do
       (predict! :pc (next-prediction))
       (decide-stroke! :npc (next-direction @play-context) nil (next-prediction)))))
 
-(defn dom-ready
-  [handler]
-  )
-
 (.addEventListener js/window "DOMContentLoaded"
                    (fn []
                      (init-context! (random-mode))
-                     (start-new-rally! (next-serve (@play-context :rallies)))
+                     (record-service!)
                      (decide-stroke! :npc nil true)))
 
 (defn setup []
@@ -258,7 +160,7 @@
   (draw-court)
   (q/stroke 240 179 37)
 
-  (let [targets (if (= :pc (next-stroker (@play-context :rallies)))
+  (let [targets (if (= :pc (d/next-stroker (@play-context :rallies)))
                   pc-targets npc-targets)
         target  (in-target (q/mouse-x) (q/mouse-y) targets)]
     (draw-targets targets)
@@ -268,15 +170,14 @@
       (play!)))
 
   (q/fill 240 179 37)
-  (let [rally (last-undecided-rally (@play-context :rallies))
-        stroke (last-stroke rally)
+  (let [rally (d/last-undecided-rally (@play-context :rallies))
+        stroke (d/last-stroke rally)
         {from :start-pos to :end-pos} stroke
-        stroker (next-stroker (@play-context :rallies))
+        stroker (d/next-stroker (@play-context :rallies))
         from-pos (target-of from
                             (if (= stroker :pc) pc-targets npc-targets))
         to-pos (target-of to
                           (if (= stroker :pc) npc-targets pc-targets))]
-
     (if @shuttle-pos
       (q/ellipse (@shuttle-pos :x)
                  (@shuttle-pos :y)
