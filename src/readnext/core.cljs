@@ -2,22 +2,13 @@
   (:require [clojure.browser.repl :as repl]
             [quil.core :as q :include-macros true]
             [readnext.motion :as m]
+            [readnext.domain :as d]
+            [readnext.util :as u]
             ))
 
 ;; (defonce conncore
 ;;   (repl/connect "http://localhost:9000/repl"))
 (enable-console-print!)
-
-(defn replace-last
-  [lst elm]
-  (let [[first & rest] lst]
-    (if rest
-      (conj rest elm)
-      (list elm))))
-
-(defn random-elm
-  [coll]
-  (nth coll (rand-int (count coll))))
 
 (def first-server :pc)
 (def play-context (atom {}))
@@ -32,7 +23,6 @@
     :npc :pc
     :pc :npc
     :doubt :doubt))
-
 (defn next-server
   [rallies]
   (or (get (last-decided-rally rallies) :won-by)
@@ -111,17 +101,17 @@
 (defn update-stroke
   [rallies next]
   (let [new-last-rally (update-in
-                         (last-undecided-rally rallies)
-                         [:strokes] conj next)]
-    (replace-last rallies new-last-rally)))
+                        (last-undecided-rally rallies)
+                        [:strokes] conj next)]
+    (u/replace-last rallies new-last-rally)))
 
 (defn random-mode
   []
-  (random-elm (seq modes)))
+  (u/random-elm (seq modes)))
 
 (defn next-direction
   [context]
-  (random-elm (seq directions)))
+  (u/random-elm (seq directions)))
 
 (defn next-prediction
   []
@@ -153,9 +143,9 @@
   (reset! play-context
           (update-in context [:rallies]
                      (fn [[first & rest :as rallies] r]
-                       (replace-last
-                         rallies
-                         (assoc-in first [:won-by] (rival player)))))))
+                       (u/replace-last
+                        rallies
+                        (assoc-in first [:won-by] (rival player)))))))
 
 (defn start-new-rally!
   [serve]
