@@ -28,6 +28,10 @@
              (>= (js/Math.abs (- (first scores) (second scores)))
                  2)))))
 
+(defn rally-end?
+  [rally]
+  (not= (rally :won-by) :doubt))
+
 (defn rival
   [player]
   (case player
@@ -52,10 +56,15 @@
 
 (defn next-stroker
   [rallies]
+  (println rallies)
   (rival ((first
            ((last-undecided-rally rallies)
             :strokes))
           :starter)))
+
+(defn last-rally
+  [rallies]
+  (first rallies))
 
 (defn last-undecided-rally
   [rallies]

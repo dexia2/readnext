@@ -74,7 +74,12 @@
 (defn draw-colored-targets []
   (q/stroke 0)
   (q/fill 255) 
-  (let [targets (if (= :pc (d/next-stroker ((g/get-context) :rallies)))
+  (let [rallies ((g/get-context) :rallies)
+        last-rally (d/last-rally rallies)
+        player (if (d/rally-end? last-rally)
+                 (last-rally :won-by)
+                 (d/next-stroker rallies))
+        targets (if (= :pc player)
                   npc-targets pc-targets)
         target  (touched-target (q/mouse-x) (q/mouse-y) targets)]
     (draw-targets targets)
@@ -93,7 +98,7 @@
                shuttle-radius
                shuttle-radius)))
 
-(defn move-shuttle! [from-pos to-pos]
+(defn move-shuttle! [from-pos to-pos rally-end?]
   (when-not @shuttle-pos
     (reset! shuttle-pos {:x (from-pos :x)
                          :y (from-pos :y)}))
@@ -102,12 +107,12 @@
 (defn draw []
   (draw-court)
 
-  (println (g/get-context))
   (let [{rallies :rallies} (g/get-context)
-        rally (d/last-undecided-rally rallies)
+        rally (d/last-rally rallies)
+        rally-end? (d/rally-end? rally)
         stroke (d/last-stroke rally)
         {from :start-pos to :end-pos} stroke
-        stroker (d/next-stroker rallies)
+        stroker (if rally-end? (rally :won-by) (d/next-stroker rallies))
         from-pos (find-target from
                               (if (= stroker :pc) npc-targets pc-targets))
         to-pos (find-target to
@@ -116,7 +121,7 @@
     (cond
       (d/game-end? (g/get-context)) nil
       (m/in-ellipse to-pos @shuttle-pos target-radius) (draw-colored-targets)
-      :else (move-shuttle! from-pos to-pos)) 
+      :else (move-shuttle! from-pos to-pos rally-end?)) 
     )
   
   )
