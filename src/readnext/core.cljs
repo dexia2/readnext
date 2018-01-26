@@ -11,29 +11,27 @@
 ;;   (repl/connect "http://localhost:9000/repl"))
 (enable-console-print!)
 
-;;Todo
-;;サーブとサーブレシーブを正しく描画する
-;;predictの仕組み導入（そもそもいるのか？）
-;;きちんと止まるように考える
-;;ミスを描画できるようにする
+;; Todo
+;; ミスを描画できるようにする
+;; ミスの場合ゴールを変更しないといけないはず
+;; かつ、壁にぶつかったタイミングでサーブを描画できるようにする
 
 (.addEventListener js/window "DOMContentLoaded"
                    (fn []
                      (g/init-context! (g/random-mode))
-                     (g/record-service!)
-                     (g/decide-stroke! :npc nil true)))
+                     (g/record-service!)))
 
 (def target-radius 15)
 (def shuttle-radius 15)
 (def shuttle-speed 15)
 (def shuttle-pos (atom nil))
 (def npc-targets #{
-                   {:direction :front-left :x 40 :y 110 }
-                   {:direction :front-right :x 240 :y 110 }
-                   {:direction :middle-left :x 40 :y 70 }
-                   {:direction :middle-right :x 240 :y 70 }
-                   {:direction :back-left :x 40 :y 30 }
-                   {:direction :back-right :x 240 :y 30 }
+                   {:direction :front-left :x 240 :y 110 }
+                   {:direction :front-right :x 40 :y 110 }
+                   {:direction :middle-left :x 240 :y 70 }
+                   {:direction :middle-right :x 40 :y 70 }
+                   {:direction :back-left :x 240 :y 30 }
+                   {:direction :back-right :x 40 :y 30 }
                    })
 (def pc-targets #{
                   {:direction :front-left :x 40 :y 180 }
@@ -45,6 +43,8 @@
                   })
 
 (defn draw-court []
+  (q/stroke 0)
+  (q/fill 255) 
   (q/rect 0 0 290 290)                                      ;コート全体
   (q/line 20 0 20 290)                                      ;サイドライン（左)
   (q/line 145 0 145 290)                                    ;センターライン（縦）
@@ -71,39 +71,53 @@
    (filter (fn [target] (= (target :direction) direction))
            (seq targets))))
 
-(defn draw []
+(defn draw-colored-targets []
   (q/stroke 0)
-  (q/fill 255)
-  (draw-court)
-  
-  (q/stroke 240 179 37)
+  (q/fill 255) 
   (let [targets (if (= :pc (d/next-stroker ((g/get-context) :rallies)))
-                  pc-targets npc-targets)
+                  npc-targets pc-targets)
         target  (touched-target (q/mouse-x) (q/mouse-y) targets)]
     (draw-targets targets)
     (when-not (empty? target)
       (q/fill 240 179 37)
+      (q/stroke 240 179 37)       
       (draw-targets target)
-      (g/play!)))
+      (g/play!))))
 
-  (q/fill 240 179 37)
+(defn draw-shuttle []
+  (when @shuttle-pos
+    (q/stroke 240 179 37) 
+    (q/fill 240 179 37)
+    (q/ellipse (@shuttle-pos :x)
+               (@shuttle-pos :y)
+               shuttle-radius
+               shuttle-radius)))
+
+(defn move-shuttle! [from-pos to-pos]
+  (when-not @shuttle-pos
+    (reset! shuttle-pos {:x (from-pos :x)
+                         :y (from-pos :y)}))
+  (reset! shuttle-pos (m/move to-pos @shuttle-pos target-radius shuttle-speed)))
+
+(defn draw []
+  (draw-court)
+
+  (println (g/get-context))
   (let [{rallies :rallies} (g/get-context)
         rally (d/last-undecided-rally rallies)
         stroke (d/last-stroke rally)
         {from :start-pos to :end-pos} stroke
         stroker (d/next-stroker rallies)
         from-pos (find-target from
-                              (if (= stroker :pc) pc-targets npc-targets))
+                              (if (= stroker :pc) npc-targets pc-targets))
         to-pos (find-target to
-                            (if (= stroker :pc) npc-targets pc-targets))]
-    (if @shuttle-pos
-      (q/ellipse (@shuttle-pos :x)
-                 (@shuttle-pos :y)
-                 shuttle-radius
-                 shuttle-radius)
-      (reset! shuttle-pos {:x (from-pos :x)
-                           :y (from-pos :y)}))
-    (reset! shuttle-pos (m/move to-pos @shuttle-pos target-radius shuttle-speed)))
+                            (if (= stroker :pc) pc-targets npc-targets))]
+    (draw-shuttle)
+    (cond
+      (d/game-end? (g/get-context)) nil
+      (m/in-ellipse to-pos @shuttle-pos target-radius) (draw-colored-targets)
+      :else (move-shuttle! from-pos to-pos)) 
+    )
   
   )
 

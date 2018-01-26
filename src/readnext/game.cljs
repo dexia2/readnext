@@ -50,35 +50,24 @@
             (d/record-service @play-context serve))))
 
 (defn decide-stroke!
-  ([player direction] (decide-stroke! player direction nil nil))
-  ([player direction serve?] (decide-stroke! player direction serve? nil))
-  ([player direction serve? prediction]
+  ([player direction] (decide-stroke! player direction nil))
+  ([player direction prediction]
    (cond
      (d/game-end? @play-context) nil
-     serve? (when (= player :npc)
-              (record-stroke! player direction nil))
      (not (success?
            @play-context
            direction
            prediction)) (do
                           (record-stroke! player direction prediction)
                           (fail-stroke! player)
-                          (when (not (d/game-end? @play-context))
-                            (record-service!)
-                            (when (= :npc (d/rival player))
-                              (decide-stroke! (d/rival player) (next-direction @play-context) true))))
+                          nil)
      :else (record-stroke! player direction prediction))))
 
 (defn predict!
   [player direction]
   (when-not (d/game-end? @play-context)
-    (if (= player :pc)
-      (decide-stroke! :npc (next-direction @play-context) nil direction))))
+    (decide-stroke! :npc (next-direction @play-context) direction)))
 
 (defn play! []
-  (if (= (d/next-stroker (@play-context :rallies))
-         :pc)
-    (decide-stroke! :pc (next-direction @play-context) nil (next-prediction))
-    (do
-      (predict! :pc (next-prediction))
-      (decide-stroke! :npc (next-direction @play-context) nil (next-prediction)))))
+  (let [player (d/next-stroker (@play-context :rallies))]
+    (decide-stroke! player (next-direction @play-context)(next-prediction))))
