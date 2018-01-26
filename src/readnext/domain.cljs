@@ -56,7 +56,6 @@
 
 (defn next-stroker
   [rallies]
-  (println rallies)
   (rival ((first
            ((last-undecided-rally rallies)
             :strokes))

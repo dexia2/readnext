@@ -72,8 +72,6 @@
            (seq targets))))
 
 (defn draw-colored-targets []
-  (q/stroke 0)
-  (q/fill 255) 
   (let [rallies ((g/get-context) :rallies)
         last-rally (d/last-rally rallies)
         player (if (d/rally-end? last-rally)
@@ -82,6 +80,8 @@
         targets (if (= :pc player)
                   npc-targets pc-targets)
         target  (touched-target (q/mouse-x) (q/mouse-y) targets)]
+    (q/stroke 0)
+    (q/fill 255) 
     (draw-targets targets)
     (when-not (empty? target)
       (q/fill 240 179 37)
@@ -107,6 +107,7 @@
 (defn draw []
   (draw-court)
 
+  (println (g/get-context))
   (let [{rallies :rallies} (g/get-context)
         rally (d/last-rally rallies)
         rally-end? (d/rally-end? rally)
@@ -120,7 +121,8 @@
     (draw-shuttle)
     (cond
       (d/game-end? (g/get-context)) nil
-      (m/in-ellipse to-pos @shuttle-pos target-radius) (draw-colored-targets)
+      (and (not rally-end?)
+           (m/in-ellipse to-pos @shuttle-pos target-radius)) (draw-colored-targets)
       :else (move-shuttle! from-pos to-pos rally-end?)) 
     )
   
