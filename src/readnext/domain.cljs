@@ -28,6 +28,11 @@
              (>= (js/Math.abs (- (first scores) (second scores)))
                  2)))))
 
+(defn score-of [player rallies]
+  (let [{point-rallies player} (group-by :won-by rallies )
+        scores (count point-rallies)]
+    scores))
+
 (defn rally-end?
   [rally]
   (not= (rally :won-by) :doubt))
@@ -95,7 +100,7 @@
 (defn next-serve
   [context]
   (let [server (next-server context)
-        pos (next-serve-pos rallies server)]
+        pos (next-serve-pos (context :rallies) server)]
     (serve-rally server pos)))
 
 (defn record-service

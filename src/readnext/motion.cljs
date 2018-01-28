@@ -1,5 +1,4 @@
 (ns readnext.motion)
-
 (defn in-ellipse [{ellipse-x :x ellipse-y :y}
                   {cur-x :x cur-y :y}
                   radius]

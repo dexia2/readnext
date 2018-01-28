@@ -12,18 +12,21 @@
 (enable-console-print!)
 
 ;; Todo
-;; ミスを描画できるようにする
-;; ミスの場合ゴールを変更しないといけないはず
-;; かつ、壁にぶつかったタイミングでサーブを描画できるようにする
+;; ミスの理由を計算する
+;; 配球を合理的にする
+;; 点数の描画を遅くする
 
 (.addEventListener js/window "DOMContentLoaded"
                    (fn []
                      (g/init-context! (g/random-mode))
                      (g/record-service!)))
 
+(def court-height 300)
+(def court-width 300)
+(def net-y (/ court-height 2))
 (def target-radius 15)
 (def shuttle-radius 15)
-(def shuttle-speed 15)
+(def shuttle-speed 8)
 (def shuttle-pos (atom nil))
 (def npc-targets #{
                    {:direction :front-left :x 240 :y 110 }
@@ -44,7 +47,7 @@
 
 (defn draw-court []
   (q/stroke 0)
-  (q/fill 255) 
+  (q/fill 255)
   (q/rect 0 0 290 290)                                      ;コート全体
   (q/line 20 0 20 290)                                      ;サイドライン（左)
   (q/line 145 0 145 290)                                    ;センターライン（縦）
@@ -81,17 +84,17 @@
                   npc-targets pc-targets)
         target  (touched-target (q/mouse-x) (q/mouse-y) targets)]
     (q/stroke 0)
-    (q/fill 255) 
+    (q/fill 255)
     (draw-targets targets)
     (when-not (empty? target)
       (q/fill 240 179 37)
-      (q/stroke 240 179 37)       
+      (q/stroke 240 179 37)
       (draw-targets target)
       (g/play!))))
 
 (defn draw-shuttle []
   (when @shuttle-pos
-    (q/stroke 240 179 37) 
+    (q/stroke 240 179 37)
     (q/fill 240 179 37)
     (q/ellipse (@shuttle-pos :x)
                (@shuttle-pos :y)
@@ -104,10 +107,27 @@
                          :y (from-pos :y)}))
   (reset! shuttle-pos (m/move to-pos @shuttle-pos target-radius shuttle-speed)))
 
-(defn draw []
-  (draw-court)
+(defn draw-service []
+  (g/record-service!)
+  (let [{rallies :rallies} (g/get-context)
+        rally (d/last-rally rallies)
+        rally-end? (d/rally-end? rally)
+        stroke (d/last-stroke rally)
+        {from :start-pos to :end-pos} stroke
+        stroker (if rally-end? (rally :won-by) (d/next-stroker rallies))
+        from-pos (find-target from
+                              (if (= stroker :pc) npc-targets pc-targets))
+        {x :x y :y }  from-pos]
+    (reset! shuttle-pos {:x x :y y })))
 
-  (println (g/get-context))
+(defn to-pos-or-net [to-pos rally-end?]
+  (let [to-pos (if rally-end?
+                 {:x (to-pos :x) :y net-y}
+                 to-pos)]
+    to-pos))
+
+(defn draw-shuttle-and-targets []
+  ;;もっとletを短くできないのか
   (let [{rallies :rallies} (g/get-context)
         rally (d/last-rally rallies)
         rally-end? (d/rally-end? rally)
@@ -117,15 +137,45 @@
         from-pos (find-target from
                               (if (= stroker :pc) npc-targets pc-targets))
         to-pos (find-target to
-                            (if (= stroker :pc) pc-targets npc-targets))]
+                            (if (= stroker :pc) pc-targets npc-targets))
+        to-pos2 (to-pos-or-net to-pos rally-end?)
+        ]
     (draw-shuttle)
     (cond
       (d/game-end? (g/get-context)) nil
-      (and (not rally-end?)
-           (m/in-ellipse to-pos @shuttle-pos target-radius)) (draw-colored-targets)
-      :else (move-shuttle! from-pos to-pos rally-end?)) 
-    )
-  
+      (m/in-ellipse to-pos2 @shuttle-pos target-radius) (if rally-end?
+                                                          (draw-service)
+                                                          (draw-colored-targets))
+      :else (move-shuttle! from-pos to-pos2 rally-end?))))
+
+(defn player-string [player]
+  (case player
+    :npc "NPC"
+    :pc "PC"
+    :doubt ""))
+
+(defn draw-context []
+  (let [{rallies :rallies} (g/get-context)
+        rally (d/last-rally rallies)
+        stroker (if (d/rally-end? rally)
+                  (rally :won-by)
+                  (d/next-stroker rallies))
+        server (d/next-server (g/get-context))
+        pc-points (d/score-of :pc rallies)
+        npc-points (d/score-of :npc rallies)]
+    (q/fill 0)
+    (q/text-size 20)
+    ;; あとでフォーマットを入れる
+    (q/text (str "PC " pc-points " - " npc-points " NPC" ) 20 340)
+    (q/text (str "サービス権 " (player-string server))  20 370)
+    (q/text (str "ストローカー " (player-string stroker))  20 400)))
+
+(defn draw []
+  ;; clear
+  (q/background 255)
+  (draw-court)
+  (draw-shuttle-and-targets)
+  (draw-context)
   )
 
 (defn setup []
@@ -135,4 +185,4 @@
   :setup setup
   :draw draw
   :host "court"
-  :size [300 300])
+  :size [300 450])
