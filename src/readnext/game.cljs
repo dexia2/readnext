@@ -1,10 +1,23 @@
 (ns readnext.game
   (:require [readnext.domain :as d]
-            [readnext.util :as u]))
+            [readnext.util :as u]
+            [readnext.npc.offence :as o]))
+
+(defn test []
+  (o/test))
 
 (def first-server :pc)
 (def play-context (atom {}))
 (def modes #{:offensive :defensive :net :all-round})
+(def vertical-type {
+                    :front #{:front-left :front-right}
+                    :middle #{:middle-left :middle-right}
+                    :back #{:back-left :back-right}
+                    })
+(def horizontal-type {
+                      :left #{:front-left :middle-left :back-left}
+                      :right #{:front-right :middle-right :back-right}
+                      })
 (def normal-score-limit 21)
 (def max-score-limit 30)
 
@@ -21,6 +34,13 @@
 (defn next-prediction []
   (nth (seq d/directions)
        (rand-int (count d/directions))))
+
+(defn vertical-from [direction]
+  (key (first
+        (filter
+         (fn [type] (some (fn [d] (= d direction))
+                          (seq (val type))))
+         (seq vertical-type)))))
 
 (defn success?
   [context direction prediction]
