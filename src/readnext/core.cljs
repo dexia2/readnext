@@ -11,6 +11,8 @@
 ;;   (repl/connect "http://localhost:9000/repl"))
 (enable-console-print!)
 
+(println (g/test))
+
 ;; Todo
 ;; ミスの理由を計算する
 ;; 配球を合理的にする

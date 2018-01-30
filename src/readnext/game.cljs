@@ -3,9 +3,6 @@
             [readnext.util :as u]
             [readnext.npc.offence :as o]))
 
-(defn test []
-  (o/test))
-
 (def first-server :pc)
 (def play-context (atom {}))
 (def modes #{:offensive :defensive :net :all-round})
@@ -41,6 +38,17 @@
          (fn [type] (some (fn [d] (= d direction))
                           (seq (val type))))
          (seq vertical-type)))))
+
+(defn decide-direction [patterns]
+  (let [rnd (rand-int 100)]
+    (loop [coll patterns
+           acc 0]
+      (let [elm (first coll)]
+        (if (or (>= acc rnd)
+                (not elm))
+          (key elm)
+          (recur (rest coll)
+                 (+ acc (val elm))))))))
 
 (defn success?
   [context direction prediction]

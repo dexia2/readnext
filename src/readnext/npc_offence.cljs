@@ -2,7 +2,7 @@
   (:require [readnext.domain :as d]
             [readnext.util :as u]))
 
-(def offence-trend
+(def combination-pattern
   {
    :back {
           :front-left 10
@@ -29,3 +29,4 @@
            :back-right 10
            }
    })
+
