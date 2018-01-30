@@ -11,8 +11,6 @@
 ;;   (repl/connect "http://localhost:9000/repl"))
 (enable-console-print!)
 
-(println (g/test))
-
 ;; Todo
 ;; ミスの理由を計算する
 ;; 配球を合理的にする
@@ -92,7 +90,7 @@
       (q/fill 240 179 37)
       (q/stroke 240 179 37)
       (draw-targets target)
-      (g/play!))))
+      (g/play! player ((first target) :direction)))))
 
 (defn draw-shuttle []
   (when @shuttle-pos
@@ -130,6 +128,7 @@
 
 (defn draw-shuttle-and-targets []
   ;;もっとletを短くできないのか
+  ;;関数に分ければいいかも
   (let [{rallies :rallies} (g/get-context)
         rally (d/last-rally rallies)
         rally-end? (d/rally-end? rally)

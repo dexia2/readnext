@@ -52,7 +52,8 @@
 
 (defn success?
   [context direction prediction]
-  (<= 50 (rand-int 100)))
+  (let [rate (if (= direction prediction) 60 90)]
+    (>= rate (rand-int 100))))
 
 (defn init-context! [mode]
   (reset! play-context
@@ -91,11 +92,7 @@
                           nil)
      :else (record-stroke! player direction prediction))))
 
-(defn predict!
-  [player direction]
-  (when-not (d/game-end? @play-context)
-    (decide-stroke! :npc (next-direction @play-context) direction)))
-
-(defn play! []
-  (let [player (d/next-stroker (@play-context :rallies))]
-    (decide-stroke! player (next-direction @play-context)(next-prediction))))
+(defn play! [player direction]
+  (if (= player :pc)
+    (decide-stroke! player direction (next-prediction))
+    (decide-stroke! player (next-direction @play-context) direction)))
