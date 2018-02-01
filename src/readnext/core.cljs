@@ -18,7 +18,8 @@
 
 (.addEventListener js/window "DOMContentLoaded"
                    (fn []
-                     (g/init-context! :offensive)
+                     (g/init-context!)
+                     (g/init-mode! (g/random-mode))
                      (g/record-service!)))
 
 (def court-height 300)
@@ -155,6 +156,12 @@
     :pc "PC"
     :doubt ""))
 
+(defn mode-string [mode]
+  (case mode
+    :offensive "攻撃的"
+    :defensive "守備的"
+    :net "ネット中心"))
+
 (defn draw-context []
   (let [{rallies :rallies} (g/get-context)
         rally (d/last-rally rallies)
@@ -169,7 +176,9 @@
     ;; あとでフォーマットを入れる
     (q/text (str "PC " pc-points " - " npc-points " NPC" ) 20 340)
     (q/text (str "サービス権 " (player-string server))  20 370)
-    (q/text (str "ストローカー " (player-string stroker))  20 400)))
+    (q/text (str "ストローカー " (player-string stroker))  20 400)
+    (q/text (str "モード " (mode-string (g/get-mode)))  20 430)
+    ))
 
 (defn draw []
   ;; clear
@@ -186,4 +195,4 @@
   :setup setup
   :draw draw
   :host "court"
-  :size [300 450])
+  :size [300 500])

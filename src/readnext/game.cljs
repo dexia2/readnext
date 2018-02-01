@@ -2,23 +2,36 @@
   (:require [readnext.domain :as d]
             [readnext.util :as u]
             [readnext.npc.util :as nu]
-            [readnext.npc.offence :as o]))
+            [readnext.npc.offence :as o]
+            [readnext.npc.defence :as de]
+            [readnext.npc.defence :as n]
+            ))
 
 (def first-server :pc)
 (def play-context (atom {}))
-(def modes #{:offensive :defensive :net :all-round})
+(def play-mode (atom {}))
+(def modes #{:offensive :defensive :net})
 (def normal-score-limit 21)o
 (def max-score-limit 30)
 
 (defn get-context []
   @play-context)
 
+(defn get-mode []
+  @play-mode)
+
 (defn random-mode []
   (u/random-elm (seq modes)))
 
+(defn combination-pattern []
+  (case @play-mode
+    :offensive o/combination-pattern
+    :defensive de/combination-pattern
+    :net n/combination-pattern))
+
 (defn next-direction
   [context]
-  (nu/decide context o/combination-pattern))
+  (nu/decide context (combination-pattern)))
 
 (defn next-prediction []
   (nth (seq d/directions)
@@ -29,13 +42,16 @@
   (let [rate (if (= direction prediction) 60 90)]
     (>= rate (rand-int 100))))
 
-(defn init-context! [mode]
+(defn init-context! []
   (reset! play-context
           (d/init-context
            {:first-server first-server
             :score-limit normal-score-limit
             :deuce-limit max-score-limit
             })))
+
+(defn init-mode! [mode]
+  (reset! play-mode mode))
 
 (defn record-stroke!
   [player direction prediction]
