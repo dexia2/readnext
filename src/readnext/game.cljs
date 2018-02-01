@@ -1,21 +1,13 @@
 (ns readnext.game
   (:require [readnext.domain :as d]
             [readnext.util :as u]
+            [readnext.npc.util :as nu]
             [readnext.npc.offence :as o]))
 
 (def first-server :pc)
 (def play-context (atom {}))
 (def modes #{:offensive :defensive :net :all-round})
-(def vertical-type {
-                    :front #{:front-left :front-right}
-                    :middle #{:middle-left :middle-right}
-                    :back #{:back-left :back-right}
-                    })
-(def horizontal-type {
-                      :left #{:front-left :middle-left :back-left}
-                      :right #{:front-right :middle-right :back-right}
-                      })
-(def normal-score-limit 21)
+(def normal-score-limit 21)o
 (def max-score-limit 30)
 
 (defn get-context []
@@ -26,29 +18,11 @@
 
 (defn next-direction
   [context]
-  (u/random-elm (seq d/directions)))
+  (nu/decide context o/combination-pattern))
 
 (defn next-prediction []
   (nth (seq d/directions)
        (rand-int (count d/directions))))
-
-(defn vertical-from [direction]
-  (key (first
-        (filter
-         (fn [type] (some (fn [d] (= d direction))
-                          (seq (val type))))
-         (seq vertical-type)))))
-
-(defn decide-direction [patterns]
-  (let [rnd (rand-int 100)]
-    (loop [coll patterns
-           acc 0]
-      (let [elm (first coll)]
-        (if (or (>= acc rnd)
-                (not elm))
-          (key elm)
-          (recur (rest coll)
-                 (+ acc (val elm))))))))
 
 (defn success?
   [context direction prediction]

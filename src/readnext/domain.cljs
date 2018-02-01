@@ -1,6 +1,5 @@
 (ns readnext.domain
-  (:require [readnext.util :as u]
-            ))
+  (:require [readnext.util :as u]))
 
 (def directions #{:front-left :front-right :middle-left :middle-right :back-left :back-right })
 
@@ -107,15 +106,17 @@
   [context serve]
   (update-in context [:rallies] conj serve ))
 
+(defn next-stroke-pos [rallies]
+  (-> (last-undecided-rally rallies)
+      (last-stroke)
+      (get :end-pos)))
+
 (defn next-stroke
   [rallies player direction]
-  (let [last-pos (-> (last-undecided-rally rallies)
-                     (last-stroke)
-                     (get :end-pos))]
-    {:starter player
-     :start-pos last-pos
-     :end-pos direction
-     }))
+  {:starter player
+   :start-pos (next-stroke-pos rallies)
+   :end-pos direction
+   })
 
 (defn record-stroke-to-rally
   [rallies next]

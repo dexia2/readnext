@@ -1,6 +1,4 @@
-(ns readnext.npc.offence
-  (:require [readnext.domain :as d]
-            [readnext.util :as u]))
+(ns readnext.npc.offence)
 
 (def combination-pattern
   {
@@ -29,4 +27,3 @@
            :back-right 10
            }
    })
-
