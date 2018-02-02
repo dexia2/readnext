@@ -41,7 +41,7 @@
 
 (defn next-server
   [{:keys [rallies first-server]}]
-  (get (last-decided-rally rallies) :won-by first-server))
+  (get (last-scored-rally rallies) :won-by first-server))
 
 (defn next-serve-pos
   [rallies server]
@@ -53,19 +53,19 @@
       :front-left)))
 
 (defn next-stroker [rallies]
-  (rival ((first ((last-undecided-rally rallies) :strokes))
+  (rival ((first ((last-unscored-rally rallies) :strokes))
           :starter)))
 
 (defn last-rally [rallies]
   (first rallies))
 
-(defn last-undecided-rally
+(defn last-unscored-rally
   [rallies]
   (first
    (filter (fn [{:keys [won-by]}] (= won-by :doubt))
            rallies)))
 
-(defn last-decided-rally [rallies]
+(defn last-scored-rally [rallies]
   (first
    (filter (fn [{:keys [won-by]}] (not= won-by :doubt) )
            rallies)))
@@ -96,7 +96,7 @@
   (update-in context [:rallies] conj serve ))
 
 (defn next-stroke-pos [rallies]
-  (-> (last-undecided-rally rallies)
+  (-> (last-unscored-rally rallies)
       (last-stroke)
       (get :end-pos)))
 
@@ -110,7 +110,7 @@
 (defn record-stroke-to-rally
   [rallies next]
   (let [new-last-rally (update-in
-                        (last-undecided-rally rallies)
+                        (last-unscored-rally rallies)
                         [:strokes] conj next)]
     (u/replace-last rallies new-last-rally)))
 
