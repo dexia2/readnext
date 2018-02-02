@@ -5,6 +5,8 @@
             [readnext.domain :as d]
             [readnext.util :as u]
             [readnext.game :as g]
+            [goog.string :as gstring]
+            [goog.string.format]
             ))
 
 ;; (defonce conncore
@@ -174,10 +176,14 @@
     (q/fill 0)
     (q/text-size 20)
     ;; あとでフォーマットを入れる
-    (q/text (str "PC " pc-points " - " npc-points " NPC" ) 20 340)
-    (q/text (str "サービス権 " (player-string server))  20 370)
-    (q/text (str "ストローカー " (player-string stroker))  20 400)
-    (q/text (str "モード " (mode-string (g/get-mode)))  20 430)
+    (q/text
+     (gstring/format "PC %s - %s NPC" pc-points npc-points) 20 340)
+    (q/text
+     (gstring/format "サービス権 %s"　(player-string server)) 20 370)
+    (q/text
+     (gstring/format "ストローカー %s"　(player-string stroker)) 20 400)
+    (q/text
+     (gstring/format "モード %s"　(mode-string (g/get-mode))) 20 430)
     ))
 
 (defn draw []
