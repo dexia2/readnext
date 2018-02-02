@@ -29,8 +29,7 @@
     :defensive de/combination-pattern
     :net n/combination-pattern))
 
-(defn next-direction
-  [context]
+(defn next-direction [context]
   (nu/decide context (combination-pattern)))
 
 (defn next-prediction []
@@ -58,15 +57,15 @@
   (reset! play-context
           (d/record-stroke-to-context @play-context player direction)))
 
-(defn fail-stroke!
-  [player]
+(defn fail-stroke! [player]
   (reset! play-context
           (d/fail-stroke @play-context player)))
 
 (defn record-service! []
-  (let [serve (d/next-serve @play-context)]
-    (reset! play-context
-            (d/record-service @play-context serve))))
+  (reset! play-context
+          (d/record-service
+           @play-context
+           (d/next-serve @play-context))))
 
 (defn decide-stroke!
   ([player direction] (decide-stroke! player direction nil))

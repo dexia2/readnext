@@ -6,9 +6,9 @@
 (def players #{:pc :npc :doubt})
 
 (defn init-context
-  [{first-server :first-server
-    score-limit :score-limit
-    deuce-limit :deuce-limit}]
+  [{:keys [first-server
+           score-limit
+           deuce-limit]}]
   {:first-server first-server
    :score-limit score-limit
    :deuce-limit deuce-limit
@@ -16,74 +16,63 @@
    })
 
 (defn game-end?
-  [{rallies :rallies
-    score-limit :score-limit
-    deuce-limit :deuce-limit
-    }]
-  (let [{npc :npc pc :pc} (group-by :won-by rallies )
+  [{:keys [rallies score-limit deuce-limit]}]
+  (let [{:keys [pc npc]} (group-by :won-by rallies )
         scores (list (count pc) (count npc))]
     (or (some (fn [s] (>= s deuce-limit)) scores)
         (and (some (fn [s] (= s score-limit)) scores)
              (>= (js/Math.abs (- (first scores) (second scores)))
                  2)))))
 
-(defn score-of [player rallies]
+(defn score-of
+  [player rallies]
   (let [{point-rallies player} (group-by :won-by rallies )
         scores (count point-rallies)]
     scores))
 
-(defn rally-end?
-  [rally]
-  (not= (rally :won-by) :doubt))
+(defn rally-end? [{:keys [won-by]}]
+  (not= won-by :doubt))
 
-(defn rival
-  [player]
+(defn rival [player]
   (case player
     :npc :pc
     :pc :npc
     :doubt :doubt))
 
 (defn next-server
-  [{rallies :rallies
-    first-server :first-server}]
-  (or (get (last-decided-rally rallies) :won-by)
-      first-server))
+  [{:keys [rallies first-server]}]
+  (get (last-decided-rally rallies) :won-by first-server))
 
 (defn next-serve-pos
   [rallies server]
   (let [points (count
-                (filter (fn [rally] (= (rally :won-by) server))
+                (filter (fn [{:keys [won-by]}] (= won-by server))
                         rallies))]
     (if (even? points)
       :front-right
       :front-left)))
 
-(defn next-stroker
-  [rallies]
-  (rival ((first
-           ((last-undecided-rally rallies)
-            :strokes))
+(defn next-stroker [rallies]
+  (rival ((first ((last-undecided-rally rallies) :strokes))
           :starter)))
 
-(defn last-rally
-  [rallies]
+(defn last-rally [rallies]
   (first rallies))
 
 (defn last-undecided-rally
   [rallies]
   (first
-   (filter (fn [rally] (= (rally :won-by) :doubt) )
+   (filter (fn [{:keys [won-by]}] (= won-by :doubt))
            rallies)))
 
-(defn last-decided-rally
-  [rallies]
+(defn last-decided-rally [rallies]
   (first
-   (filter (fn [rally] (not= (rally :won-by) :doubt) )
+   (filter (fn [{:keys [won-by]}] (not= won-by :doubt) )
            rallies)))
 
 (defn last-stroke
-  [rally]
-  (first (:strokes rally)))
+  [{:keys [strokes]}]
+  (first strokes))
 
 (defn serve-rally
   [player start-pos]
@@ -97,9 +86,9 @@
    })
 
 (defn next-serve
-  [context]
+  [{:keys [rallies] :as context}]
   (let [server (next-server context)
-        pos (next-serve-pos (context :rallies) server)]
+        pos (next-serve-pos rallies server)]
     (serve-rally server pos)))
 
 (defn record-service
@@ -126,12 +115,11 @@
     (u/replace-last rallies new-last-rally)))
 
 (defn record-stroke-to-context
-  [context player direction]
-  (let [{rallies :rallies} context]
-    (->>
-     (next-stroke rallies player direction prediction)
-     (record-stroke-to-rally rallies)
-     ((fn [r] (assoc-in context [:rallies] r))))))
+  [{:keys [rallies] :as context} player direction]
+  (->>
+   (next-stroke rallies player direction prediction)
+   (record-stroke-to-rally rallies)
+   ((fn [r] (assoc-in context [:rallies] r)))))
 
 (defn fail-stroke
   [context player]

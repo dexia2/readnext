@@ -59,7 +59,7 @@
   )
 
 (defn draw-targets [targets]
-  (doseq [{x :x y :y} (seq targets)]
+  (doseq [{:keys [x y]} (seq targets)]
     (q/ellipse x y  (* target-radius 2) (* target-radius 2))))
 
 (defn touched-target
@@ -76,7 +76,7 @@
            (seq targets))))
 
 (defn draw-colored-targets []
-  (let [rallies ((g/get-context) :rallies)
+  (let [{:keys [rallies]} (g/get-context)
         last-rally (d/last-rally rallies)
         player (if (d/rally-end? last-rally)
                  (last-rally :won-by)
@@ -110,7 +110,7 @@
 
 (defn draw-service []
   (g/record-service!)
-  (let [{rallies :rallies} (g/get-context)
+  (let [{:keys [rallies]} (g/get-context)
         rally (d/last-rally rallies)
         rally-end? (d/rally-end? rally)
         stroke (d/last-stroke rally)
@@ -118,7 +118,7 @@
         stroker (if rally-end? (rally :won-by) (d/next-stroker rallies))
         from-pos (find-target from
                               (if (= stroker :pc) npc-targets pc-targets))
-        {x :x y :y }  from-pos]
+        {:keys [x y]} from-pos]
     (reset! shuttle-pos {:x x :y y })))
 
 (defn to-pos-or-net [to-pos rally-end?]
@@ -130,7 +130,7 @@
 (defn draw-shuttle-and-targets []
   ;;もっとletを短くできないのか
   ;;関数に分ければいいかも
-  (let [{rallies :rallies} (g/get-context)
+  (let [{:keys [rallies]} (g/get-context)
         rally (d/last-rally rallies)
         rally-end? (d/rally-end? rally)
         stroke (d/last-stroke rally)
@@ -163,7 +163,7 @@
     :net "ネット中心"))
 
 (defn draw-context []
-  (let [{rallies :rallies} (g/get-context)
+  (let [{:keys [rallies]} (g/get-context)
         rally (d/last-rally rallies)
         stroker (if (d/rally-end? rally)
                   (rally :won-by)
