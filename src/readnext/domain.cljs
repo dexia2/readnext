@@ -56,6 +56,12 @@
   (rival ((first ((last-unscored-rally rallies) :strokes))
           :starter)))
 
+(defn next-hitter [rallies]
+  (let [last-rally (last-rally rallies)]
+    (if (rally-end? last-rally)
+      (last-rally :won-by)
+      (next-stroker rallies))))
+
 (defn last-rally [rallies]
   (first rallies))
 
@@ -73,6 +79,9 @@
 (defn last-stroke
   [{:keys [strokes]}]
   (first strokes))
+
+(defn latest-stroke [rallies]
+  (last-stroke (last-rally rallies)))
 
 (defn serve-rally
   [player start-pos]

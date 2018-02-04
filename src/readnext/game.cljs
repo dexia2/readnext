@@ -11,7 +11,7 @@
 (def play-context (atom {}))
 (def play-mode (atom {}))
 (def modes #{:offensive :defensive :net})
-(def normal-score-limit 21)o
+(def normal-score-limit 21)
 (def max-score-limit 30)
 
 (defn get-context []
@@ -66,6 +66,12 @@
           (d/record-service
            @play-context
            (d/next-serve @play-context))))
+
+(defn rally-end? []
+  (-> @play-context
+      (get :rallies)
+      (d/last-rally)
+      (d/rally-end?)))
 
 (defn decide-stroke!
   ([player direction] (decide-stroke! player direction nil))

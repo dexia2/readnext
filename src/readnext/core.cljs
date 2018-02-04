@@ -13,11 +13,6 @@
 ;;   (repl/connect "http://localhost:9000/repl"))
 (enable-console-print!)
 
-;; Todo
-;; ミスの理由を計算する
-;; 配球を合理的にする
-;; 点数の描画を遅くする
-
 (.addEventListener js/window "DOMContentLoaded"
                    (fn []
                      (g/init-context!)
@@ -60,32 +55,28 @@
   (q/line 0 240 290 240)                                    ;サービスライン（ダブルス）
   )
 
-(defn draw-targets [targets]
-  (doseq [{:keys [x y]} (seq targets)]
-    (q/ellipse x y  (* target-radius 2) (* target-radius 2))))
+(defn find-target
+  [direction targets]
+  (first
+   (filter (fn [{d :direction}] (= d direction))
+           (seq targets))))
 
 (defn touched-target
-  [mouse-x mouse-y targets]
+  [{mouse-x :x mouse-y :y} targets]
   (filter (fn [target] (m/in-ellipse target
                                      {:x mouse-x :y mouse-y}
                                      target-radius))
           targets))
 
-(defn find-target
-  [direction targets]
-  (first
-   (filter (fn [target] (= (target :direction) direction))
-           (seq targets))))
+(defn draw-targets [targets]
+  (doseq [{:keys [x y]} (seq targets)]
+    (q/ellipse x y  (* target-radius 2) (* target-radius 2))))
 
 (defn draw-colored-targets []
-  (let [{:keys [rallies]} (g/get-context)
-        last-rally (d/last-rally rallies)
-        player (if (d/rally-end? last-rally)
-                 (last-rally :won-by)
-                 (d/next-stroker rallies))
-        targets (if (= :pc player)
-                  npc-targets pc-targets)
-        target  (touched-target (q/mouse-x) (q/mouse-y) targets)]
+  (let [stroker (d/next-hitter ((g/get-context) :rallies))
+        targets (if (= :pc stroker) npc-targets pc-targets)
+        target  (touched-target {:x (q/mouse-x) :y (q/mouse-y)}
+                                targets)]
     (q/stroke 0)
     (q/fill 255)
     (draw-targets targets)
@@ -93,7 +84,7 @@
       (q/fill 240 179 37)
       (q/stroke 240 179 37)
       (draw-targets target)
-      (g/play! player ((first target) :direction)))))
+      (g/play! stroker ((first target) :direction)))))
 
 (defn draw-shuttle []
   (when @shuttle-pos
@@ -110,17 +101,25 @@
                          :y (from-pos :y)}))
   (reset! shuttle-pos (m/move to-pos @shuttle-pos target-radius shuttle-speed)))
 
+(defn stroking-from []
+  (let [{:keys [rallies]} (g/get-context)
+        stroker (d/next-hitter rallies)
+        {from :start-pos} (d/latest-stroke rallies)
+        from-pos (find-target from
+                              (if (= stroker :pc) npc-targets pc-targets))]
+    from-pos))
+
+(defn stroking-to [rally-end?]
+  (let [{:keys [rallies]} (g/get-context)
+        stroker (d/next-hitter rallies)
+        {to :end-pos} (d/latest-stroke rallies)
+        to-pos (find-target to
+                            (if (= stroker :pc) pc-targets npc-targets))]
+    (to-pos-or-net to-pos rally-end?)))
+
 (defn draw-service []
   (g/record-service!)
-  (let [{:keys [rallies]} (g/get-context)
-        rally (d/last-rally rallies)
-        rally-end? (d/rally-end? rally)
-        stroke (d/last-stroke rally)
-        {from :start-pos to :end-pos} stroke
-        stroker (if rally-end? (rally :won-by) (d/next-stroker rallies))
-        from-pos (find-target from
-                              (if (= stroker :pc) npc-targets pc-targets))
-        {:keys [x y]} from-pos]
+  (let [{:keys [x y]} (stroking-from)]
     (reset! shuttle-pos {:x x :y y })))
 
 (defn to-pos-or-net [to-pos rally-end?]
@@ -130,27 +129,16 @@
     to-pos))
 
 (defn draw-shuttle-and-targets []
-  ;;もっとletを短くできないのか
-  ;;関数に分ければいいかも
-  (let [{:keys [rallies]} (g/get-context)
-        rally (d/last-rally rallies)
-        rally-end? (d/rally-end? rally)
-        stroke (d/last-stroke rally)
-        {from :start-pos to :end-pos} stroke
-        stroker (if rally-end? (rally :won-by) (d/next-stroker rallies))
-        from-pos (find-target from
-                              (if (= stroker :pc) npc-targets pc-targets))
-        to-pos (find-target to
-                            (if (= stroker :pc) pc-targets npc-targets))
-        to-pos2 (to-pos-or-net to-pos rally-end?)
-        ]
+  (let [rally-end? (g/rally-end?)
+        from-pos (stroking-from)
+        to-pos (stroking-to rally-end?)]
     (draw-shuttle)
     (cond
       (d/game-end? (g/get-context)) nil
-      (m/in-ellipse to-pos2 @shuttle-pos target-radius) (if rally-end?
-                                                          (draw-service)
-                                                          (draw-colored-targets))
-      :else (move-shuttle! from-pos to-pos2 rally-end?))))
+      (m/in-ellipse to-pos @shuttle-pos target-radius) (if rally-end?
+                                                         (draw-service)
+                                                         (draw-colored-targets))
+      :else (move-shuttle! from-pos to-pos rally-end?))))
 
 (defn player-string [player]
   (case player
@@ -166,24 +154,16 @@
 
 (defn draw-context []
   (let [{:keys [rallies]} (g/get-context)
-        rally (d/last-rally rallies)
-        stroker (if (d/rally-end? rally)
-                  (rally :won-by)
-                  (d/next-stroker rallies))
+        stroker (d/next-hitter rallies)
         server (d/next-server (g/get-context))
         pc-points (d/score-of :pc rallies)
         npc-points (d/score-of :npc rallies)]
     (q/fill 0)
     (q/text-size 20)
-    ;; あとでフォーマットを入れる
-    (q/text
-     (gstring/format "PC %s - %s NPC" pc-points npc-points) 20 340)
-    (q/text
-     (gstring/format "サービス権 %s"　(player-string server)) 20 370)
-    (q/text
-     (gstring/format "ストローカー %s"　(player-string stroker)) 20 400)
-    (q/text
-     (gstring/format "モード %s"　(mode-string (g/get-mode))) 20 430)
+    (q/text (gstring/format "PC %s - %s NPC" pc-points npc-points) 20 340)
+    (q/text (gstring/format "サービス権 %s"　(player-string server)) 20 370)
+    (q/text (gstring/format "ストローカー %s"　(player-string stroker)) 20 400)
+    (q/text (gstring/format "モード %s"　(mode-string (g/get-mode))) 20 430)
     ))
 
 (defn draw []
