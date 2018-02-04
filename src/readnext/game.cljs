@@ -7,7 +7,6 @@
 (def first-server :pc)
 (def play-context (atom {}))
 (def play-mode (atom {}))
-(def modes #{:offensive :defensive :net})
 (def normal-score-limit 21)
 (def max-score-limit 30)
 
@@ -18,7 +17,7 @@
   @play-mode)
 
 (defn random-mode []
-  (u/random-elm (seq modes)))
+  (u/random-elm (seq nu/modes)))
 
 (defn next-direction [context]
   (nu/decide context (get-mode)))

@@ -6,6 +6,8 @@
             [readnext.npc.decision.defence :as n]
             ))
 
+(def modes #{:offensive :defensive :net})
+
 (def vertical-type {
                     :front #{:front-left :front-right}
                     :middle #{:middle-left :middle-right}
@@ -17,19 +19,15 @@
                       :right #{:front-right :middle-right :back-right}
                       })
 
-;; 暫定対応
-;; ないということがありえないようにしたい
 (defn decide-direction [patterns]
   (let [rnd (rand-int 100)]
     (loop [coll patterns
-           acc 0]
+           acc (val (first coll))]
       (let [elm (first coll)]
-        (if (not elm)
-          (key (u/random-elm (seq patterns)))
-          (if (>= acc rnd)
-            (key elm)
-            (recur (rest coll)
-                   (+ acc (val elm)))))))))
+        (if (>= acc rnd)
+          (key elm)
+          (recur (rest coll)
+                 (+ acc (val elm))))))))
 
 (defn categorized-by [direction categories]
   (key (first
