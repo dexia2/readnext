@@ -95,11 +95,15 @@
                shuttle-radius
                shuttle-radius)))
 
-(defn move-shuttle! [from-pos to-pos rally-end?]
-  (when-not @shuttle-pos
-    (reset! shuttle-pos {:x (from-pos :x)
-                         :y (from-pos :y)}))
-  (reset! shuttle-pos (m/move to-pos @shuttle-pos target-radius shuttle-speed)))
+(defn move-shuttle!
+  [rally-end?]
+  (let [{:keys [x y]} (stroking-from)
+        to-pos (stroking-to rally-end?)]
+    (when-not @shuttle-pos
+      (reset! shuttle-pos {:x x :y y}))
+    (println to-pos)
+    (reset! shuttle-pos
+            (m/move to-pos @shuttle-pos target-radius shuttle-speed))))
 
 (defn stroking-from []
   (let [{:keys [rallies]} (g/get-context)
@@ -115,22 +119,18 @@
         {to :end-pos} (d/latest-stroke rallies)
         to-pos (find-target to
                             (if (= stroker :pc) pc-targets npc-targets))]
-    (to-pos-or-net to-pos rally-end?)))
+    (if rally-end? (to-net to-pos) to-pos)))
+
+(defn to-net [to-pos]
+  {:x (to-pos :x) :y net-y})
 
 (defn draw-service []
   (g/record-service!)
   (let [{:keys [x y]} (stroking-from)]
     (reset! shuttle-pos {:x x :y y })))
 
-(defn to-pos-or-net [to-pos rally-end?]
-  (let [to-pos (if rally-end?
-                 {:x (to-pos :x) :y net-y}
-                 to-pos)]
-    to-pos))
-
 (defn draw-shuttle-and-targets []
   (let [rally-end? (d/last-rally-end? (g/get-context))
-        from-pos (stroking-from)
         to-pos (stroking-to rally-end?)]
     (draw-shuttle)
     (cond
@@ -138,7 +138,7 @@
       (m/in-ellipse to-pos @shuttle-pos target-radius) (if rally-end?
                                                          (draw-service)
                                                          (draw-colored-targets))
-      :else (move-shuttle! from-pos to-pos rally-end?))))
+      :else (move-shuttle! rally-end?))))
 
 (defn player-string [player]
   (case player
