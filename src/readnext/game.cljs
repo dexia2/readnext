@@ -1,10 +1,7 @@
 (ns readnext.game
   (:require [readnext.domain :as d]
             [readnext.util :as u]
-            [readnext.npc.util :as nu]
-            [readnext.npc.offence :as o]
-            [readnext.npc.defence :as de]
-            [readnext.npc.defence :as n]
+            [readnext.npc.decision.util :as nu]
             ))
 
 (def first-server :pc)
@@ -23,14 +20,8 @@
 (defn random-mode []
   (u/random-elm (seq modes)))
 
-(defn combination-pattern []
-  (case @play-mode
-    :offensive o/combination-pattern
-    :defensive de/combination-pattern
-    :net n/combination-pattern))
-
 (defn next-direction [context]
-  (nu/decide context (combination-pattern)))
+  (nu/decide context (get-mode)))
 
 (defn next-prediction []
   (nth (seq d/directions)
@@ -67,21 +58,20 @@
            @play-context
            (d/next-serve @play-context))))
 
-(defn decide-stroke!
-  ([player direction] (decide-stroke! player direction nil))
-  ([player direction prediction]
-   (cond
-     (d/game-end? @play-context) nil
-     (not (success?
-           @play-context
-           direction
-           prediction)) (do
-                          (record-stroke! player direction prediction)
-                          (fail-stroke! player)
-                          nil)
-     :else (record-stroke! player direction prediction))))
+(defn try-stroke!
+  [player direction prediction]
+  (cond
+    (d/game-end? @play-context) nil
+    (not (success?
+          @play-context
+          direction
+          prediction)) (do
+                         (record-stroke! player direction prediction)
+                         (fail-stroke! player)
+                         nil)
+    :else (record-stroke! player direction prediction)))
 
 (defn play! [player direction]
   (if (= player :pc)
-    (decide-stroke! player direction (next-prediction))
-    (decide-stroke! player (next-direction @play-context) direction)))
+    (try-stroke! player direction (next-prediction))
+    (try-stroke! player (next-direction @play-context) direction)))

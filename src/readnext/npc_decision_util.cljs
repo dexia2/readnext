@@ -1,7 +1,10 @@
-(ns readnext.npc.util
+(ns readnext.npc.decision.util
   (:require [readnext.util :as u]
-            [readnext.domain :as d])
-  )
+            [readnext.domain :as d]
+            [readnext.npc.decision.offence :as o]
+            [readnext.npc.decision.defence :as de]
+            [readnext.npc.decision.defence :as n]
+            ))
 
 (def vertical-type {
                     :front #{:front-left :front-right}
@@ -41,9 +44,15 @@
 (defn categorized-by-horizontal [direction]
   (categorized-by direction horizontal-type))
 
-(defn decide [context combination-pattern]
+(defn combination-pattern [mode]
+  (case mode
+    :offensive o/combination-pattern
+    :defensive de/combination-pattern
+    :net n/combination-pattern))
+
+(defn decide [context mode]
   (->
    (d/next-stroke-pos (context :rallies))
    (categorized-by-vertical pos)
-   (combination-pattern)
+   ((combination-pattern mode))
    (decide-direction)))

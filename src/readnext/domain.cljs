@@ -143,4 +143,3 @@
                (u/replace-last
                 rallies
                 (assoc-in first [:won-by] (rival player))))))
-

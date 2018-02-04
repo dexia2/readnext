@@ -1,4 +1,4 @@
-(ns readnext.npc.net)
+(ns readnext.npc.decision.net)
 
 (def combination-pattern
   {

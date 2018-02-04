@@ -101,7 +101,6 @@
         to-pos (stroking-to rally-end?)]
     (when-not @shuttle-pos
       (reset! shuttle-pos {:x x :y y}))
-    (println to-pos)
     (reset! shuttle-pos
             (m/move to-pos @shuttle-pos target-radius shuttle-speed))))
 

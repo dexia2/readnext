@@ -1,4 +1,4 @@
-(ns readnext.npc.offence)
+(ns readnext.npc.decision.offence)
 
 (def combination-pattern
   {
