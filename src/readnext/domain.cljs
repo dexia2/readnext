@@ -33,6 +33,12 @@
 (defn rally-end? [{:keys [won-by]}]
   (not= won-by :doubt))
 
+(defn last-rally-end?
+  [{:keys [rallies]}]
+  (-> rallies
+      (last-rally)
+      (rally-end?)))
+
 (defn rival [player]
   (case player
     :npc :pc

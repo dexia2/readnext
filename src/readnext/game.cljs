@@ -67,12 +67,6 @@
            @play-context
            (d/next-serve @play-context))))
 
-(defn rally-end? []
-  (-> @play-context
-      (get :rallies)
-      (d/last-rally)
-      (d/rally-end?)))
-
 (defn decide-stroke!
   ([player direction] (decide-stroke! player direction nil))
   ([player direction prediction]

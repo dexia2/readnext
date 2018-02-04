@@ -129,7 +129,7 @@
     to-pos))
 
 (defn draw-shuttle-and-targets []
-  (let [rally-end? (g/rally-end?)
+  (let [rally-end? (d/last-rally-end? (g/get-context))
         from-pos (stroking-from)
         to-pos (stroking-to rally-end?)]
     (draw-shuttle)
