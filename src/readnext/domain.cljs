@@ -143,3 +143,10 @@
                (u/replace-last
                 rallies
                 (assoc-in first [:won-by] (rival player))))))
+
+(defn all-strokes-by
+  [{:keys [rallies]}
+   player]
+  (->> rallies
+       (mapcat (fn [{:keys [strokes]}] strokes))
+       (filter (fn [{:keys [starter]}] (= starter player)))))
