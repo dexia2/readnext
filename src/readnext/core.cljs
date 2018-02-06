@@ -84,7 +84,7 @@
       (q/fill 240 179 37)
       (q/stroke 240 179 37)
       (draw-targets target)
-      (g/play! stroker ((first target) :direction)))))
+      (g/play! ((first target) :direction)))))
 
 (defn draw-shuttle []
   (when @shuttle-pos
@@ -123,20 +123,24 @@
     (reset! shuttle-pos
             (m/move to-pos @shuttle-pos target-radius shuttle-speed))))
 
-(defn draw-service []
+(defn draw-service! []
   (g/record-service!)
   (let [{:keys [x y]} (stroking-from)]
     (reset! shuttle-pos {:x x :y y })))
 
 (defn draw-shuttle-and-targets []
   (let [rally-end? (d/last-rally-end? (g/get-context))
+        stroker (d/next-hitter ((g/get-context) :rallies))
         to-pos (stroking-to rally-end?)]
     (draw-shuttle)
     (cond
       (d/game-end? (g/get-context)) nil
-      (m/in-ellipse to-pos @shuttle-pos target-radius) (if rally-end?
-                                                         (draw-service)
-                                                         (draw-colored-targets))
+      (m/in-ellipse
+       to-pos @shuttle-pos target-radius) (if rally-end?
+                                            (draw-service!)
+                                            (if (= stroker :npc)
+                                              (draw-colored-targets)
+                                              (g/play!)))
       :else (move-shuttle! rally-end?))))
 
 (defn player-string [player]

@@ -23,7 +23,7 @@
                       :right #{:front-right :middle-right :back-right}
                       })
 
-(defn categorized-by [direction categories]
+(defn categorized-by [direction categories]/
   (key (first
         (filter
          (fn [type] (some (fn [d] (= d direction))

@@ -2,7 +2,6 @@
   (:require [readnext.domain :as d]
             [readnext.util :as u]
             [readnext.npc.decision.util :as nu]
-            [readnext.npc.predict.util :as pu]
             ))
 
 (def first-server :pc)
@@ -20,15 +19,15 @@
 (defn random-mode []
   (u/random-elm (seq nu/modes)))
 
-(defn next-direction [context]
-  (nu/decide context (get-mode)))
-
-(defn next-prediction [context]
-  (pu/predict context))
+(defn next-direction
+  ([] (u/random-elm (seq d/directions)))
+  ([context] (nu/decide context (get-mode))))
 
 (defn success?
-  [context direction prediction]
-  (let [rate (if (= direction prediction) 60 90)]
+  [player direction prediction]
+  (let [rate (if (= player :pc)
+               75
+               (if (= direction prediction) 50 90))]
     (>= rate (rand-int 100))))
 
 (defn init-context! []
@@ -62,7 +61,7 @@
   (cond
     (d/game-end? @play-context) nil
     (not (success?
-          @play-context
+          player
           direction
           prediction)) (do
                          (record-stroke! player direction prediction)
@@ -70,7 +69,6 @@
                          nil)
     :else (record-stroke! player direction prediction)))
 
-(defn play! [player direction]
-  (if (= player :pc)
-    (try-stroke! player direction (next-prediction @play-context))
-    (try-stroke! player (next-direction @play-context) direction)))
+(defn play!
+  ([] (try-stroke! :pc (next-direction) direction nil))
+  ([direction] (try-stroke! :npc (next-direction @play-context) direction)))
