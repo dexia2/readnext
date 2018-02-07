@@ -16,7 +16,7 @@
 (.addEventListener js/window "DOMContentLoaded"
                    (fn []
                      (g/init-context!)
-                     (g/init-mode! (g/random-mode))
+                     (g/init-mode!)
                      (g/record-service!)))
 
 (def court-height 300)

@@ -24,6 +24,15 @@
              (>= (js/Math.abs (- (first scores) (second scores)))
                  2)))))
 
+(defn interval?
+  [{:keys [rallies score-limit]}]
+  (let [{:keys [pc npc]} (group-by :won-by rallies )
+        scores (list (count pc) (count npc))]
+    (println scores)
+    (println (inc (quot score-limit 2)))
+    (some (fn [s] (= s (inc (quot score-limit 2))))
+          scores)))
+
 (defn score-of
   [player rallies]
   (let [{point-rallies player} (group-by :won-by rallies )

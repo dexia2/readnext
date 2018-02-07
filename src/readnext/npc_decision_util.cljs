@@ -11,12 +11,12 @@
 (defn decide-direction [patterns]
   (let [rnd (rand-int 100)]
     (loop [coll patterns
-           acc (val (first coll))]
-      (let [elm (first coll)]
-        (if (>= acc rnd)
+           acc 0]
+      (let [elm (first coll)
+            sum (+ acc (val elm))]
+        (if (>= sum rnd)
           (key elm)
-          (recur (rest coll)
-                 (+ acc (val elm))))))))
+          (recur (rest coll) sum))))))
 
 (defn combination-pattern [mode]
   (case mode
