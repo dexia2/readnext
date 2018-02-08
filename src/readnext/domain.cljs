@@ -28,8 +28,6 @@
   [{:keys [rallies score-limit]}]
   (let [{:keys [pc npc]} (group-by :won-by rallies )
         scores (list (count pc) (count npc))]
-    (println scores)
-    (println (inc (quot score-limit 2)))
     (some (fn [s] (= s (inc (quot score-limit 2))))
           scores)))
 
@@ -105,6 +103,7 @@
                    :starter player
                    :start-pos start-pos
                    :end-pos start-pos
+                   :serve? true
                    })
    :won-by :doubt
    })
@@ -129,6 +128,7 @@
   {:starter player
    :start-pos (next-stroke-pos rallies)
    :end-pos direction
+   :serve? nil
    })
 
 (defn record-stroke-to-rally

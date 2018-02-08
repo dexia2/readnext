@@ -98,7 +98,6 @@
 (defn play!
   ([] (try-stroke! :pc (next-direction) direction nil))
   ([direction]
-   (println (get-context))
    (when (and (not (event-done? :intervel))
               (d/interval? @play-context))
      (change-mode! :intervel))
