@@ -54,8 +54,16 @@
 
 (defn record-stroke!
   [player direction prediction]
-  (reset! play-context
-          (d/record-stroke-to-context @play-context player direction)))
+  (let [{:keys [rallies] :as context} @play-context
+        new-stroke (assoc
+                    (d/next-stroke rallies player direction)
+                    :prediction prediction)]
+    (reset! play-context
+            (d/record-stroke-to-context
+             @play-context
+             new-stroke
+             player
+             direction))))
 
 (defn fail-stroke! [player]
   (reset! play-context
@@ -90,7 +98,7 @@
 (defn play!
   ([] (try-stroke! :pc (next-direction) direction nil))
   ([direction]
-   (println (event-done? :intervel))
+   (println (get-context))
    (when (and (not (event-done? :intervel))
               (d/interval? @play-context))
      (change-mode! :intervel))

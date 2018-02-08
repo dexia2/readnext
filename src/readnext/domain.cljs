@@ -139,11 +139,10 @@
     (u/replace-last rallies new-last-rally)))
 
 (defn record-stroke-to-context
-  [{:keys [rallies] :as context} player direction]
-  (->>
-   (next-stroke rallies player direction prediction)
-   (record-stroke-to-rally rallies)
-   ((fn [r] (assoc-in context [:rallies] r)))))
+  [{:keys [rallies] :as context} stroke player direction]
+  (->> stroke
+       (record-stroke-to-rally rallies)
+       ((fn [r] (assoc-in context [:rallies] r)))))
 
 (defn fail-stroke
   [context player]
