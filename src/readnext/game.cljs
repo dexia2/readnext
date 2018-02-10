@@ -119,3 +119,10 @@
   (filter
    (fn [{:keys [end-pos prediction]}] (= end-pos prediction))
    (all-predictable-strokes rallies)))
+
+(defn longest-strokes-count
+  [rallies]
+  (apply max
+         (map (fn [{:keys [strokes]}]
+                (count strokes))
+              rallies)))
