@@ -105,3 +105,17 @@
               (last-phase? @play-context))
      (change-mode! :last-phase))
    (try-stroke! :npc (next-direction @play-context) direction)))
+
+(defn all-predictable-strokes
+  [rallies]
+  (filter (fn [{:keys [starter serve?]}]
+            (and (= starter :npc)
+                 (not serve?)))
+          (mapcat (fn [{:keys [strokes]}] strokes)
+                  rallies)))
+
+(defn prediction-hit-strokes
+  [rallies]
+  (filter
+   (fn [{:keys [end-pos prediction]}] (= end-pos prediction))
+   (all-predictable-strokes rallies)))

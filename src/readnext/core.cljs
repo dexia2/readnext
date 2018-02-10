@@ -160,13 +160,16 @@
         stroker (d/next-hitter rallies)
         server (d/next-server (g/get-context))
         pc-points (d/score-of :pc rallies)
-        npc-points (d/score-of :npc rallies)]
+        npc-points (d/score-of :npc rallies)
+        predictables (count (g/all-predictable-strokes rallies))
+        prediction-hits (count (g/prediction-hit-strokes rallies)) ]
     (q/fill 0)
     (q/text-size 20)
     (q/text (gstring/format "PC %s - %s NPC" pc-points npc-points) 20 340)
     (q/text (gstring/format "サービス権 %s"　(player-string server)) 20 370)
     (q/text (gstring/format "ストローカー %s"　(player-string stroker)) 20 400)
     (q/text (gstring/format "モード %s"　(mode-string (g/get-mode))) 20 430)
+    (q/text (gstring/format "的中 %s/%s" prediction-hits predictables) 20 460)
     ))
 
 (defn draw []
@@ -184,4 +187,4 @@
   :setup setup
   :draw draw
   :host "court"
-  :size [300 500])
+  :size [300 550])
