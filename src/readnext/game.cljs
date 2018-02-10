@@ -126,3 +126,17 @@
          (map (fn [{:keys [strokes]}]
                 (count strokes))
               rallies)))
+
+(defn strokes-count-average
+  [rallies]
+  (average
+   (map (fn [{:keys [strokes]}]
+          (count strokes))
+        rallies)))
+
+(defn average
+  [numbers]
+  (let [devider (count numbers)]
+    (if (= devider 0)
+      0
+      (/ (reduce + numbers) devider))))
