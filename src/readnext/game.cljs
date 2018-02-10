@@ -32,6 +32,11 @@
                (if (= direction prediction) 50 90))]
     (>= rate (rand-int 100))))
 
+(defn reset-game! []
+  (init-context!)
+  (init-mode!)
+  (reset! events (list)))
+
 (defn init-context! []
   (reset! play-context
           (d/init-context
