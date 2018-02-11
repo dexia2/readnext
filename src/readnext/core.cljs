@@ -143,32 +143,20 @@
                                               (g/play!)))
       :else (move-shuttle! rally-end?))))
 
-(defn player-string [player]
-  (case player
-    :npc "NPC"
-    :pc "PC"
-    :doubt ""))
-
-(defn mode-string [mode]
-  (case mode
-    :offensive "攻撃的"
-    :defensive "守備的"
-    :net "ネット中心"))
-
 (defn draw-context []
   (let [{:keys [rallies]} (g/get-context)
-        stroker (d/next-hitter rallies)
-        server (d/next-server (g/get-context))
         pc-points (d/score-of :pc rallies)
         npc-points (d/score-of :npc rallies)
-        max-rally (g/strokes-count-average rallies)]
+        all-predictable (count (g/all-predictable-strokes rallies))
+        all-prediction-hits (count (g/prediction-hit-strokes rallies))
+        average-strokes-count (g/strokes-count-average rallies)
+        longest-rally (g/longest-strokes-count rallies)]
     (q/fill 0)
     (q/text-size 20)
     (q/text (gstring/format "PC %s - %s NPC" pc-points npc-points) 20 340)
-    (q/text (gstring/format "サービス権 %s"　(player-string server)) 20 370)
-    (q/text (gstring/format "ストローカー %s"　(player-string stroker)) 20 400)
-    (q/text (gstring/format "モード %s"　(mode-string (g/get-mode))) 20 430)
-    (q/text (gstring/format "平均ラリー数 %s" max-rally) 20 460)
+    (q/text (gstring/format "予測 %s/%s" all-prediction-hits all-predictable) 20 370)
+    (q/text (gstring/format "平均ラリー数 %.1f" average-strokes-count) 20 400)
+    (q/text (gstring/format "最長ラリー数 %s" longest-rally) 20 430)
     ))
 
 (defn draw []
