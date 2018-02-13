@@ -35,7 +35,8 @@
 (defn reset-game! []
   (init-context!)
   (init-mode!)
-  (reset! events (list)))
+  (reset! events (list))
+  (record-service!))
 
 (defn init-context! []
   (reset! play-context

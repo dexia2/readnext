@@ -15,9 +15,12 @@
 
 (.addEventListener js/window "DOMContentLoaded"
                    (fn []
-                     (g/init-context!)
-                     (g/init-mode!)
-                     (g/record-service!)))
+                     (g/reset-game!)))
+
+(.addEventListener (.getElementById js/document "reset") "click"
+                   (fn []
+                     (g/reset-game!)
+                     (reset! shuttle-pos nil)))
 
 (def court-height 300)
 (def court-width 300)
@@ -174,4 +177,4 @@
   :setup setup
   :draw draw
   :host "court"
-  :size [300 550])
+  :size [300 470])
